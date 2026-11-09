@@ -41,7 +41,7 @@ const $$=id=>document.getElementById(id);
 let tab="in",msgTxt="",busy=false;
 function logo(){return document.querySelector(".logo img.logo-l")?.getAttribute("src")||""}
 function paint(){const el=$$("login");if(!el)return;
-  const f=(id,l,t,ac)=>`<div class="field"><label for="${id}">${l}</label><input id="${id}" type="${t}" autocomplete="${ac}" ${t==="email"?'inputmode="email"':""}></div>`;
+  const f=(id,l,t,ac)=>`<div class="field"><label for="${id}">${l}</label>${t==="password"?`<div class="l-pw"><input id="${id}" type="password" autocomplete="${ac}"><button type="button" class="l-eye" data-eye="${id}" aria-label="Afficher le mot de passe"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>`:`<input id="${id}" type="${t}" autocomplete="${ac}" ${t==="email"?'inputmode="email"':""}>`}</div>`;
   let body="";
   if(tab==="denied")body=`<p class="p-sub">Tu es connecté(e) avec <b>${(session?.user?.email||"").replace(/</g,"&lt;")}</b>, mais cette adresse n'a pas accès au logiciel.</p><div class="p-box">Demande à ton manager de t'inviter avec cette adresse, ou connecte-toi avec une autre.</div><button class="btn ghost p-go" type="button" data-out>Changer de compte</button>`;
   else if(tab==="forgot")body=`<p class="p-sub">Pour des raisons de sécurité, le mot de passe est réinitialisé par un administrateur.</p><div class="p-box">Demande à Damien ou à Hugo de te donner un nouveau mot de passe depuis l'écran Accès & équipes. Tu pourras ensuite le changer.</div><button class="btn ghost p-go" type="button" data-tab="in">Retour à la connexion</button>`;
@@ -49,10 +49,13 @@ function paint(){const el=$$("login");if(!el)return;
     <form id="lForm" novalidate>${f("lMail","Adresse e-mail","email","email")}${f("lPass",tab==="up"?"Choisis un mot de passe (8 caractères minimum)":"Mot de passe","password",tab==="up"?"new-password":"current-password")}${tab==="up"?f("lPass2","Confirme le mot de passe","password","new-password"):""}
     <p class="err" id="lErr">${msgTxt}</p><button class="btn p-go" id="lGo" type="submit" ${busy?"disabled":""}>${tab==="up"?"Créer mon compte":"Se connecter"}</button></form>
     ${tab==="in"?`<button class="link l-forgot" type="button" data-tab="forgot">Mot de passe oublié ?</button>`:`<p class="p-hint" style="margin-top:12px">Seules les adresses invitées par un manager peuvent créer un compte.</p>`}`;
-  el.innerHTML=`<div class="p-card">${logo()?`<img class="p-logo" src="${logo()}" alt="Meridia">`:""}<h1>${tab==="up"?"Créer mon compte":tab==="denied"?"Accès non autorisé":tab==="forgot"?"Mot de passe oublié":"Connexion"}</h1>${tab==="in"||tab==="up"?`<p class="p-sub">${tab==="up"?"Utilise l'adresse e-mail à laquelle tu as été invité(e).":"Accède à ton espace Meridia."}</p>`:""}${body}</div>`}
+  const h1=tab==="up"?"Créer mon compte":tab==="denied"?"Accès non autorisé":tab==="forgot"?"Mot de passe oublié":"Bon retour !";
+  const sub=tab==="up"?"Utilise l'adresse e-mail à laquelle tu as été invité(e).":tab==="in"?"Connecte-toi à ton espace Meridia.":"";
+  el.innerHTML=`<div class="l-wrap"><aside class="l-art" aria-hidden="true"><div class="l-shade"></div>${logo()?`<img class="l-logo" src="${logo()}" alt="">`:""}<div class="l-copy"><h2>Ton activité et ton équipe,<br>au même endroit.</h2><p>Prospection, unités, structure et simulateurs pour les conseillers Meridia.</p></div><a class="l-cred" href="https://unsplash.com" target="_blank" rel="noopener">Photo · Unsplash</a></aside>
+  <main class="l-side"><div class="l-form">${logo()?`<img class="p-logo l-mlogo" src="${logo()}" alt="Meridia">`:""}<h1>${h1}</h1>${sub?`<p class="p-sub">${sub}</p>`:""}${body}</div><p class="l-foot">Meridia · espace réservé aux conseillers invités</p></main></div>`}
 function showLogin(t){tab=t||"in";msgTxt="";const el=$$("login");el.hidden=false;document.body.classList.add("portal-on");paint();setTimeout(()=>$$("lMail")?.focus(),50)}
 function hideLogin(){$$("login").hidden=true;document.body.classList.remove("portal-on")}
-document.addEventListener("click",async e=>{const t=e.target.closest("#login [data-tab]");if(t){tab=t.dataset.tab;msgTxt="";paint();return}
+document.addEventListener("click",async e=>{const ey=e.target.closest("#login [data-eye]");if(ey){const i=$$(ey.dataset.eye);i.type=i.type==="password"?"text":"password";ey.classList.toggle("on",i.type==="text");return}const t=e.target.closest("#login [data-tab]");if(t){tab=t.dataset.tab;msgTxt="";paint();return}
   if(e.target.closest("#login [data-out]")||e.target.closest("[data-logout]")){await sb.auth.signOut();location.reload()}});
 document.addEventListener("submit",async e=>{if(e.target.id!=="lForm")return;e.preventDefault();if(busy)return;
   const email=$$("lMail").value.trim().toLowerCase(),pw=$$("lPass").value,err=m=>{msgTxt=m;busy=false;paint();$$("lMail").value=email};
@@ -74,6 +77,7 @@ async function boot(){const {data}=await sb.auth.getSession();session=data.sessi
 sb.auth.onAuthStateChange((ev,s)=>{if(ev==="SIGNED_OUT"){session=null}});
 document.addEventListener("DOMContentLoaded",boot);
 })();
+
 
 </script>
 </head><body>
@@ -892,6 +896,31 @@ body.nores .navlink,body.nores .resban{display:none!important}
 <div class="scrim" id="scrim" hidden><form class="sheet" id="sheet" novalidate></form></div>
 <div class="toast" id="toast" hidden role="status"><span id="toastTxt"></span><button type="button" id="toastBtn" hidden>Annuler</button></div>
 
+<style>
+#login{padding:0;display:block;place-items:normal;justify-items:normal;background:#fff;overflow:auto}#login[hidden]{display:none}
+.l-wrap{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);min-height:100vh;min-height:100dvh}
+.l-art{position:relative;margin:16px 0 16px 16px;border-radius:28px;overflow:hidden;background:#172f6b url("https://images.unsplash.com/photo-1782080163196-26ed8ea266d7?auto=format&fit=crop&w=1400&q=80") center/cover no-repeat;display:flex;flex-direction:column;justify-content:space-between;padding:34px 38px;color:#fff}
+.l-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,28,64,.55) 0%,rgba(14,28,64,.05) 35%,rgba(14,28,64,.15) 55%,rgba(10,22,52,.85) 100%)}
+.l-art>*:not(.l-shade){position:relative}
+.l-logo{height:26px;width:auto;align-self:flex-start;background:#fff;padding:10px 16px;box-shadow:0 8px 24px -10px rgba(0,0,0,.35);border-radius:999px;box-sizing:content-box}
+.l-copy{max-width:520px;margin-top:auto}
+.l-copy h2{margin:0 0 12px;font-size:clamp(28px,3vw,40px);line-height:1.1;font-weight:800;letter-spacing:-.02em}
+.l-copy p{margin:0;font-size:16px;line-height:1.5;color:rgba(255,255,255,.85);max-width:420px}
+.l-cred{position:absolute!important;right:18px;bottom:14px;font-size:11px;color:rgba(255,255,255,.6);text-decoration:none}
+.l-side{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px 24px}
+.l-form{width:min(420px,100%);margin:auto 0}
+.l-form h1{margin:0 0 8px;font-size:34px;font-weight:800;letter-spacing:-.02em;color:var(--ink,#0f172a)}
+.l-form .p-sub{margin-bottom:26px}
+.l-form form{display:flex;flex-direction:column;gap:16px}
+.l-form .field input{height:48px;border-radius:14px;font-size:15px}
+.l-form .p-go{height:50px;border-radius:14px;font-size:15px;margin-top:6px}
+.l-mlogo{display:none}
+.l-pw{position:relative}.l-pw input{width:100%;padding-right:46px}
+.l-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:none;color:#94a3b8;cursor:pointer;padding:6px;border-radius:8px;display:grid}
+.l-eye:hover,.l-eye.on{color:var(--brand,#1e3a8a)}
+.l-foot{font-size:12px;color:#94a3b8;margin:24px 0 0}
+@media (max-width:900px){.l-wrap{grid-template-columns:1fr}.l-art{display:none}.l-mlogo{display:block}}
+</style>
 <div class="portal" id="login" hidden></div>
 <script>
 const STATUTS=[
