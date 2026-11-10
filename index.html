@@ -546,6 +546,7 @@ body[data-view="dash"] .topbar h1{visibility:hidden}
 .gauge .ring,.gauge .gc{grid-row:1;grid-column:1}
 .gc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .gn{font-size:36px;font-weight:300;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.gn.m{font-size:28px}.gn.s{font-size:22px;letter-spacing:-.02em}
 .gs{font-size:11px;color:var(--muted);font-weight:500}
 .gp{margin-top:4px;font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-soft);border-radius:999px;padding:2px 8px}
 .gl{display:flex;flex-direction:column;gap:8px;min-width:150px}
@@ -582,7 +583,7 @@ body[data-view="dash"] .side-sec,body[data-view="dash"] .goal-mini{display:none}
 @media (max-width:860px){
   .k4{grid-template-columns:repeat(2,minmax(0,1fr))}
   .kpi{padding:14px 16px;gap:6px}.kpi .v{font-size:28px}.kpi .spark{width:64px;height:22px}
-  .gauge{grid-template-columns:130px minmax(0,1fr);padding:14px;gap:14px;width:100%}.gauge .ring{width:130px;height:130px}.gn{font-size:30px}
+  .gauge{grid-template-columns:130px minmax(0,1fr);padding:14px;gap:14px;width:100%}.gauge .ring{width:130px;height:130px}.gn{font-size:30px}.gn.m{font-size:24px}.gn.s{font-size:19px}
   .hero .bigs{gap:22px}.gl{min-width:0}
 }
 /* fond blanc (mode clair) */
@@ -1371,7 +1372,7 @@ function renderDash(){
     <div class="segs">${segv.map(([l,v,c,n])=>`<div class="seg-i ${c}" style="flex:${Math.max(16,v)} 1 0"><span><b class="sn">${l}</b> · ${n}</span><b>${v} %</b></div>`).join("")}</div>
     <div class="bigs"><div class="big"><span class="lb2"><i>${svgI("pros")}</i>Contacts</span><span class="n" data-count="${P.length}">${P.length}</span></div>
     <div class="big"><span class="lb2"><i>${svgI("cal")}</i>RDV calés</span><span class="n" data-count="${P.filter(p=>p.statut==="rdv_cale").length}">${P.filter(p=>p.statut==="rdv_cale").length}</span></div></div></div>
-    <button type="button" class="gauge" data-go="obj" aria-label="Objectif du mois : ${fmt(tot)} unités sur ${fmt(obj)}">${ring(tot,obj)}<span class="gc"><span class="gn" data-count="${tot}">${fmt(tot)}</span><span class="gs">/ ${fmt(obj)} unités</span><b class="gp">${obj?Math.round(tot/obj*100):0} %</b></span>
+    <button type="button" class="gauge" data-go="obj" aria-label="Objectif du mois : ${fmt(tot)} unités sur ${fmt(obj)}">${ring(tot,obj)}<span class="gc"><span class="gn${fmt(tot).length>=8?" s":fmt(tot).length>=6?" m":""}" data-count="${tot}">${fmt(tot)}</span><span class="gs">/ ${fmt(obj)} unités</span><b class="gp">${obj?Math.round(tot/obj*100):0} %</b></span>
     <span class="gl"><b>Objectif du mois</b><span>${paceTag||""}</span>${CFG.inclureEquipe&&tm?`<small>dont ${fmt(tm)} u équipe</small>`:""}</span></button></section>`;
   $("v-dash").innerHTML=`${hero}
   ${cashWidget().replace('style="margin-top:16px"','style="margin-bottom:18px"')}
