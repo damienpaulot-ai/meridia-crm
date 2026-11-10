@@ -981,7 +981,8 @@ try{view=localStorage.getItem("mer-view")||view;WANT=view;mode=localStorage.getI
 const objOf=m=>Number(CFG.objectifs?.[m]??CFG.objectifMensuel??1500)||0;
 const signedDate=p=>p.dateSignature||p.maj||"";
 const unitMonth=p=>p.moisUnites||ym(signedDate(p));
-const myUnits=m=>P.filter(p=>p.statut==="signe"&&unitMonth(p)===m).reduce((t,p)=>t+(Number(p.unites)||0),0);
+const crmUnits=m=>P.filter(p=>p.statut==="signe"&&unitMonth(p)===m).reduce((t,p)=>t+(Number(p.unites)||0),0);
+const myUnits=m=>aslOn(m)?aslU(MYKEY,m):crmUnits(m);
 let BAR={JFA1:{t:"c",v:50},JFA2:{t:"u",v:2},JFA3:{t:"u",v:3},JFAC:{t:"u",v:3},FA:{t:"u",v:3.5}};
 const barOf=st=>{const b=BAR?.[st||"JFA1"];if(b===null||b===undefined||b==="")return null;if(typeof b==="number")return{t:"u",v:b};return b.v===null||b.v===undefined||b.v===""?null:{t:b.t==="c"?"c":"u",v:Number(b.v)}};
 const barTxt=st=>{const b=barOf(st);return b?`${String(b.v).replace(".",",")} € par ${b.t==="c"?"contrat démarré":"unité"}`:"barème à renseigner"};
@@ -1014,6 +1015,10 @@ const aslP=(id,m=month)=>ASLM[m]?.persons?.[id]||null;
 const aslU=(id,m=month)=>Number(aslP(id,m)?.u)||0;
 const aslBranch=(id,m=month)=>aslU(id,m)+sdown(id).reduce((s,p)=>s+aslU(p.id,m),0);
 const aslMonths=()=>Object.keys(ASLM).sort();
+// L'ASL fait référence pour les unités dès qu'il existe pour le mois et que la personne est reliée à la structure
+const aslOn=m=>!!(ASLM[m]&&MYKEY&&SP(MYKEY));
+const aslTeam=m=>aslBranch(MYKEY,m)-aslU(MYKEY,m);
+const hasDown=()=>!!(MYKEY&&sdown(MYKEY).length);
 // --- vue Structure ---
 function spCard(p,cls=""){const dn=sdown(p.id),u=aslU(p.id),st=p.statut||"JFA1",mg=canManage(p.id);
   return `<div class="oc ${cls}${p.binome?" bin":""}${p.bloque?" off":""}" data-s="${esc(SST.indexOf(st)>4?"FA":st)}" style="${jv(st)}" tabindex="0" data-sp="${esc(p.id)}">${p.verif&&mg?'<span class="tag vf">À VÉRIFIER</span>':p.binome?'<span class="tag">BINÔME</span>':""}<div class="oh"><span class="av" style="${jv(st)}">${esc(initials(p.nom))}</span><div style="min-width:0"><div class="on">${esc(p.nom)}</div><span class="os">${esc(st)}${p.uid?' · <i class="lk" title="Compte relié">●</i>':""}</span></div></div><div class="ou"><span>Unités ${esc(monthShort(month))}</span><b>${fmt(u)}</b></div>${dn.length?`<div class="ou" style="margin-top:2px"><span>Avec son équipe</span><b>${fmt(aslBranch(p.id))}</b></div>`:""}</div>`}
@@ -1178,7 +1183,8 @@ function personChart(t,n=6){const ms=[];for(let i=n-1;i>=0;i--)ms.push(shiftMont
     g+=`<text x="${cx}" y="${H-5}" text-anchor="middle" style="${d.m===month?"fill:var(--ink);font-weight:800":""}">${monthShort(d.m)}</text>`});
   if(obj)g+=`<line x1="${L}" x2="${W-R}" y1="${Y(obj)}" y2="${Y(obj)}" stroke="var(--c-ref)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Unités par mois de ${esc(t.nom)}">${g}</svg>`}
-const teamUnits=m=>T.reduce((s,x)=>s+(Number(x.unites?.[m])||0),0);
+const teamCrm=m=>T.reduce((s,x)=>s+(Number(x.unites?.[m])||0),0);
+const teamUnits=m=>aslOn(m)&&hasDown()?aslTeam(m):teamCrm(m);
 const totalUnits=m=>myUnits(m)+(CFG.inclureEquipe?teamUnits(m):0);
 const signedCount=m=>P.filter(p=>p.statut==="signe"&&unitMonth(p)===m).length;
 const rdvCount=m=>P.filter(p=>["rdv_cale","rdv_fait","signe"].includes(p.statut)&&p.dateRdv&&ym(p.dateRdv)===m).length;
@@ -1299,7 +1305,7 @@ function renderDash(){
   const obj=objOf(month),me=myUnits(month),tm=teamUnits(month),tot=me+(CFG.inclureEquipe?tm:0);
   const kpis=[
     {l:"Mes unités",v:fmt(me),u:1,d:delta(me,myUnits(pm)),s:spark(six.map(myUnits),"var(--blue)"),go:"cli"},
-    MODE==="member"?{l:"À relancer",v:dueRelances().length,d:'<span class="delta eq">aujourd\'hui</span>',s:"",f:"relance",novs:1}:{l:"Unités équipe",v:fmt(tm),u:1,d:delta(tm,teamUnits(pm)),s:spark(six.map(teamUnits),"var(--blue)"),go:"team"},
+    MODE==="member"&&!hasDown()?{l:"À relancer",v:dueRelances().length,d:'<span class="delta eq">aujourd\'hui</span>',s:"",f:"relance",novs:1}:{l:"Unités équipe",v:fmt(tm),u:1,d:delta(tm,teamUnits(pm)),s:spark(six.map(teamUnits),"var(--blue)"),go:"team"},
     {l:"Contrats signés",v:signedCount(month),d:delta(signedCount(month),signedCount(pm)),s:spark(six.map(signedCount),"var(--blue)"),go:"cli"},
     {l:"RDV",v:rdvCount(month),d:delta(rdvCount(month),rdvCount(pm)),s:spark(six.map(rdvCount),"var(--blue)"),f:"rdv_cale"},
   ];
@@ -1325,7 +1331,9 @@ function renderDash(){
     .sort((a,b)=>(a.d||"0").localeCompare(b.d||"0"));
   const later=[...P.filter(p=>p.statut==="rdv_cale"&&p.dateRdv>wk).map(p=>({p,d:p.dateRdv,k:"rdv"})),...P.filter(p=>p.statut==="relance"&&p.dateRelance>wk).map(p=>({p,d:p.dateRelance,k:"rel"}))].sort((a,b)=>a.d.localeCompare(b.d)).slice(0,4);
   // équipe
-  const topTeam=[...T].sort((a,b)=>(Number(b.unites?.[month])||0)-(Number(a.unites?.[month])||0)).slice(0,5);
+  const LBS=aslOn(month)&&hasDown();
+  const LBT=LBS?sdown(MYKEY).map(p=>({id:p.id,nom:p.nom,statut:p.statut,_sp:1,unites:{[month]:aslU(p.id)}})):T;
+  const topTeam=[...LBT].sort((a,b)=>(Number(b.unites?.[month])||0)-(Number(a.unites?.[month])||0)).slice(0,5);
   const maxT=Math.max(1,...topTeam.map(x=>Number(x.unites?.[month])||0));
   // recos
   const recMap={};P.forEach(p=>{const n=(p.recommandation||"").trim();if(n){const k=norm(n);recMap[k]=recMap[k]||{n,c:0};recMap[k].c++}});
@@ -1358,8 +1366,8 @@ function renderDash(){
       <div class="w-b"><div class="funnel">${fs.map(([l,n,c,p])=>`<div class="fs" style="${cv(c)}"><span>${l}</span><div class="fbar"><i style="width:${Math.max(7,n/base*100)}%">${fmt(n)}</i></div><span class="pct">${p==null?"":Math.round(p*100)+" %"}</span></div>`).join("")}</div></div></div>
     <div class="w s6"><div class="w-h"><div><h3>6 derniers mois</h3><div class="sub">Unités moi + équipe face à l'objectif</div></div><button class="link" type="button" data-go="obj">Détail</button></div>
       <div class="w-b">${monthsChart(6,200)}<div class="legend"><span><i class="sw" style="background:var(--brand)"></i>Moi</span><span><i class="sw" style="background:var(--accent)"></i>Équipe</span><span><i class="sw line" style="background:var(--c-ref)"></i>Objectif</span></div></div></div>
-    <div class="w s6"><div class="w-h"><div><h3>${T.length?"Classement équipe":"Meilleurs recommandeurs"}</h3><div class="sub">${T.length?esc(monthName(month)):"Contacts apportés par recommandation"}</div></div><button class="link" type="button" data-go="${T.length?"team":"pros"}">Voir</button></div>
-      <div class="w-b">${T.length?topTeam.map((x,i)=>{const u=Number(x.unites?.[month])||0;return `<div class="lb" tabindex="0" data-team="${esc(x.id)}"><span class="rk">${i+1}</span><div class="nm"><div>${avatar(x,"av xs")}${esc(x.nom)} <span class="badge" style="${jv(x.statut)}">${esc(x.statut||"JFA1")}</span></div><div class="bar"><i style="width:${u/maxT*100}%;background:var(--blue)"></i></div></div><span class="u">${fmt(u)} u</span></div>`}).join(""):
+    <div class="w s6"><div class="w-h"><div><h3>${LBT.length?"Classement équipe":"Meilleurs recommandeurs"}</h3><div class="sub">${LBT.length?esc(monthName(month))+(LBS?" · ASL":""):"Contacts apportés par recommandation"}</div></div><button class="link" type="button" data-go="${LBS?"struct":LBT.length?"team":"pros"}">Voir</button></div>
+      <div class="w-b">${LBT.length?topTeam.map((x,i)=>{const u=Number(x.unites?.[month])||0;return `<div class="lb" tabindex="0" ${x._sp?"data-sp":"data-team"}="${esc(x.id)}"><span class="rk">${i+1}</span><div class="nm"><div>${avatar(x,"av xs")}${esc(x.nom)} <span class="badge" style="${jv(x.statut)}">${esc(x.statut||"JFA1")}</span></div><div class="bar"><i style="width:${u/maxT*100}%;background:var(--blue)"></i></div></div><span class="u">${fmt(u)} u</span></div>`}).join(""):
         recs.length?recs.map((x,i)=>`<div class="lb"><span class="rk">${i+1}</span><div class="nm"><div>${esc(x.n)}</div><div class="bar"><i style="width:${x.c/recs[0].c*100}%;background:var(--blue)"></i></div></div><span class="u">${x.c} reco${x.c>1?"s":""}</span></div>`).join(""):'<div class="none">Ajoute tes recrues dans Équipe, ou note qui t\'a recommandé chaque contact.</div>'}</div></div>
     <div class="w s12" style="grid-column:span 12"><div class="w-h"><div><h3>Activité récente</h3><div class="sub">Derniers changements d'étape</div></div></div>
       <div class="w-b feed"><div class="items">${feed.length?feed.slice(0,6).map(f=>`<div class="it" tabindex="0" data-open="${esc(f.p.id)}"><span class="ico" style="${stv(f.h.s)}">${svgI("check")}</span><span class="t">${esc(f.p.nom)}<small>passé en ${esc(S[f.h.s]?.l||f.h.s)}</small></span><span class="when">${rel(f.h.d)}</span></div>`).join(""):'<div class="none">Tes changements d\'étape apparaîtront ici.</div>'}</div></div></div>
@@ -1369,6 +1377,7 @@ document.addEventListener("click",e=>{if(e.target.closest("[data-backnow]"))$("m
 $("v-dash").addEventListener("click",e=>{
   const stb=e.target.closest("[data-start]");if(stb){markStarted(P.find(p=>p.id===stb.dataset.start));return}
   const o=e.target.closest("[data-open]");if(o)return openContact(P.find(p=>p.id===o.dataset.open));
+  const sp=e.target.closest("[data-sp]");if(sp)return openSP(sp.dataset.sp);
   const t=e.target.closest("[data-team]");if(t)return openTeam(T.find(x=>x.id===t.dataset.team));
   const g=e.target.closest("[data-go]");if(g)return setView(g.dataset.go);
   const f=e.target.closest("[data-filt]");if(f)return goPros(f.dataset.filt);
@@ -1454,7 +1463,7 @@ function renderCli(){
   const reco=cl.filter(p=>(p.recommandation||"").trim()).length;
   $("v-cli").innerHTML=`<div class="grid k5" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px">
     <div class="w kpi"><span class="l">Contrats · ${esc(monthName(month))}</span><span class="v">${signedCount(month)}</span><span class="f">${delta(signedCount(month),signedCount(shiftMonth(month,-1)))}${spark(six.map(signedCount),"var(--c-sign)")}</span></div>
-    <div class="w kpi"><span class="l">Unités du mois</span><span class="v">${fmt(myUnits(month))}</span><span class="f">${delta(myUnits(month),myUnits(shiftMonth(month,-1)))}${spark(six.map(myUnits),"var(--brand)")}</span></div>
+    <div class="w kpi"><span class="l">Unités du mois</span><span class="v">${fmt(crmUnits(month))}</span><span class="f">${delta(crmUnits(month),crmUnits(shiftMonth(month,-1)))}${spark(six.map(crmUnits),"var(--brand)")}</span></div>
     <div class="w kpi"><span class="l">Clients au total</span><span class="v">${cl.length} <small>· ${fmt(all)} u</small></span><span class="f"><span class="delta eq">${cl.length?fmt(all/cl.length):0} u / contrat</span></span></div>
     <div class="w kpi"><span class="l">Venus par recommandation</span><span class="v">${cl.length?Math.round(reco/cl.length*100):0} %</span><span class="f"><span class="delta eq">${reco} sur ${cl.length}</span></span></div>
   </div>
