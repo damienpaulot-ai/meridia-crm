@@ -278,6 +278,9 @@ select.st{width:auto;padding-right:8px}
 
 /* équipe / objectifs */
 .trt{grid-template-columns:minmax(0,1.6fr) 90px minmax(0,1.5fr) 110px 110px}
+.tra{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 150px 90px 90px 130px}
+.echip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;white-space:nowrap}.echip.ok{background:var(--c-sign-soft,#e3f4ea);color:var(--c-sign)}.echip.wait{background:#fff4dd;color:#9a6200}.echip.ko{background:#fde8e6;color:#b4332a}
+@media (max-width:860px){.tra{grid-template-columns:1fr auto}.tra>.cell:not(.r){display:none}}
 .prog{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
 .prog .bar{flex:1}
 .hist{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;min-width:520px}
@@ -951,7 +954,7 @@ const ICON={
   calc:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 18.5h.01M12 18.5h4"/>',
 };
 const svgI=(k)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
-const VIEWS=[["dash","Tableau de bord","Accueil"],["pros","Prospects","Prospects"],["cli","Clients","Clients"],["calc","Calculateur","Calcul"],["simu","Simulateur SEP","Simu"],["car","Simulateur carrière","Carrière"],["team","Équipe","Équipe"],["obj","Objectifs","Objectifs"],["struct","Structure","Structure"],["acces","Accès & équipes","Accès"]];
+const VIEWS=[["dash","Tableau de bord","Accueil"],["pros","Prospects","Prospects"],["cli","Clients","Clients"],["calc","Calculateur","Calcul"],["simu","Simulateur SEP","Simu"],["car","Simulateur carrière","Carrière"],["team","Équipe","Équipe"],["obj","Objectifs","Objectifs"],["acces","Accès & équipes","Accès"]];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const norm=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
@@ -976,7 +979,7 @@ let db=null,dl=null,canWrite=true,P=[],T=[],CFG={objectifMensuel:1500,objectifs:
 let MODE="manager",UID=null,PROS="prospects",CFGDOC="config/main",CFGRAW={},TRAW=[],M=[],MP={},ME=null,joining=false;const unsubs={};
 let TCOL="equipe",SELF=null,ANN=[],ACC={},annLast="",annT=null,PORTAL=null;
 let view="dash",month=ym(today()),filt="",shown=PAGE,mode="liste",sheetCtx=null,loaded=false;
-try{view=localStorage.getItem("mer-view")||view;WANT=view;mode=localStorage.getItem("mer-mode")||mode}catch(e){}
+try{view=localStorage.getItem("mer-view")||view;if(view==="struct")view="team";WANT=view;mode=localStorage.getItem("mer-mode")||mode}catch(e){}
 
 const objOf=m=>Number(CFG.objectifs?.[m]??CFG.objectifMensuel??1500)||0;
 const signedDate=p=>p.dateSignature||p.maj||"";
@@ -991,7 +994,7 @@ const payOf=p=>{if(p.annule)return 0;const b=barOf(remSt(p));if(!b)return null;r
 const sumPay=L=>L.reduce((a,p)=>{const v=payOf(p);if(v===null)a.miss++;else a.e+=v;return a},{e:0,miss:0});
 const myStatut=()=>{const sp=MYKEY?STRUCT.find(x=>x.id===MYKEY):null;return sp?.statut||(MODE==="member"?(ME?.statut||"JFA1"):(CFG.monStatut||"JFA2"))};
 // ---------- structure officielle (ASL), droits, super admin ----------
-const MODS=[["dash","Tableau de bord"],["pros","Prospects"],["cli","Clients"],["calc","Calculateur"],["simu","Simulateur SEP"],["car","Simulateur carrière"],["team","Équipe"],["obj","Objectifs"],["struct","Structure"],["res","Ressources"]];
+const MODS=[["dash","Tableau de bord"],["pros","Prospects"],["cli","Clients"],["calc","Calculateur"],["simu","Simulateur SEP"],["car","Simulateur carrière"],["team","Équipe et structure"],["obj","Objectifs"],["res","Ressources"]];
 const ALLM=MODS.map(m=>m[0]);
 const DROITS0={JFA1:["dash","pros","cli","res"],JFA2:["dash","pros","cli","calc","simu","obj","res"],JFA3:["dash","pros","cli","calc","simu","car","obj","struct","res"],JFAC:ALLM,FA:ALLM};
 const SST=["JFA1","JFA2","JFA3","JFAC","FA","FC","CD","CR","CN"];
@@ -1026,17 +1029,20 @@ function spTree(root){const kids=[...(SKIDS[root.id]||[])].sort((a,b)=>aslBranch
   const flat=p=>{const o=[],w=id=>[...(SKIDS[id]||[])].sort((a,b)=>aslBranch(b.id)-aslBranch(a.id)).forEach(x=>{o.push(x);w(x.id)});w(p.id);return o};
   return `<div class="org"><div class="org-in"><div class="oc me" data-s="${esc(SST.indexOf(root.statut)>4?"FA":root.statut)}" style="${jv(root.statut)}" tabindex="0" data-sp="${esc(root.id)}"><div class="oh"><span class="av" style="${jv(root.statut)}">${esc(initials(root.nom))}</span><div><div class="on">${root.id===MYKEY?"Moi · ":""}${esc(root.nom)}</div><span class="os">${esc(root.statut||"")}</span></div></div><div class="ou" style="justify-content:center;gap:8px"><span>Unités <b>${fmt(aslU(root.id))}</b> · avec l'équipe <b>${fmt(aslBranch(root.id))}</b></span></div></div>
     ${kids.length?`<div class="org-stem"></div><div class="org-cols">${kids.map(k=>{const f=flat(k);return `<div class="org-col">${spCard(k)}${f.length?`<div class="org-kids">${f.map(x=>spCard(x,"sub")).join("")}</div>`:""}</div>`}).join("")}</div>`:""}</div></div>`}
-function renderStruct(){const el=$("v-struct"),V=visS(),A=ASLM[month],ms=aslMonths();
-  if(!V.length){el.innerHTML=`<div class="w"><div class="empty"><b>Tu n'es pas encore relié(e) à la structure</b>${isMega()?"Importe un ASL depuis Accès & équipes pour construire la structure.":"Demande à Damien de relier ton compte à ton nom dans la structure."}</div></div>`;return}
+const RESBAN=()=>`<a class="resban" href="ressources.html" target="_blank" rel="noopener"><span class="ico" style="--c:var(--brand);--b:var(--brand-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg></span><span class="t"><b>Espace ressources</b><small>Process de vente, objections, calculateur : la page à partager à tes recrues</small></span><span class="btn ghost sm">Ouvrir ↗</span></a>`;
+let TSCOPE="me";try{TSCOPE=localStorage.getItem("mer-tscope")||"me"}catch(e){}
+const structOn=()=>!!(MYKEY&&meS())||(isMega()&&STRUCT.length>0);
+function structBlock(scope){const all=scope==="all"&&isMega()||!meS(),V=all?(isMega()?STRUCT:visS()):[meS(),...sdown(MYKEY)],A=ASLM[month],ms=aslMonths();
   const tot=V.reduce((s,p)=>s+aslU(p.id),0),n=V.reduce((s,p)=>s+(Number(aslP(p.id)?.n)||0),0),att=V.reduce((s,p)=>s+(Number(aslP(p.id)?.a)||0),0),val=V.reduce((s,p)=>s+(Number(aslP(p.id)?.v)||0),0);
-  const roots=isMega()?(SKIDS[""]||[]).slice().sort((a,b)=>sdown(b.id).length-sdown(a.id).length):[meS()];
-  el.innerHTML=`<div class="aslbar ${A?"ok":"ko"}"><span>${A?`ASL de ${esc(monthName(month))} · ${A.auto?"synchronisé":"importé"} le ${dmy(A.importe)}${A.fichier?` · ${esc(A.fichier)}`:""}${A.partiel?` · données partielles (${esc(A.partiel)} uniquement)`:""}`:`Pas d'ASL importé pour ${esc(monthName(month))}.${ms.length?` Dernier ASL : ${esc(monthName(ms[ms.length-1]))}.`:""}`}</span>${isSuper()?`<button class="btn ghost sm" type="button" data-goimp>Importer un ASL</button>`:""}</div>
+  const roots=all?(SKIDS[""]||[]).slice().sort((a,b)=>sdown(b.id).length-sdown(a.id).length):[meS()];
+  return `<div class="aslbar ${A?"ok":"ko"}"><span>${A?`ASL de ${esc(monthName(month))} · ${A.auto?"synchronisé":"importé"} le ${dmy(A.importe)}${A.fichier?` · ${esc(A.fichier)}`:""}${A.partiel?` · données partielles (${esc(A.partiel)} uniquement)`:""}`:`Pas d'ASL importé pour ${esc(monthName(month))}.${ms.length?` Dernier ASL : ${esc(monthName(ms[ms.length-1]))}.`:""}`}</span>${isSuper()?`<button class="btn ghost sm" type="button" data-goimp>Importer un ASL</button>`:""}</div>
   <div class="grid k5" style="grid-template-columns:repeat(4,minmax(0,1fr));margin:14px 0 16px">
-    <div class="w kpi"><span class="l">Unités ${isMega()?"du cabinet":"de ma structure"}</span><span class="v">${fmt(tot)}</span><span class="f"><span class="delta eq">source ASL</span></span></div>
-    <div class="w kpi"><span class="l">Contrats</span><span class="v">${n}</span><span class="f"></span></div>
+    <div class="w kpi"><span class="l">Unités ${all?"du cabinet":"de ma structure"}</span><span class="v">${fmt(tot)}</span><span class="f"><span class="delta eq">${all?"source ASL":`dont ${fmt(meS()?aslU(MYKEY):0)} perso`}</span></span></div>
+    <div class="w kpi"><span class="l">Contrats</span><span class="v">${n}</span><span class="f"><span class="delta eq">${V.length} personne${V.length>1?"s":""}</span></span></div>
     <div class="w kpi"><span class="l">Validé</span><span class="v">${fmt(val)}</span><span class="f"><span class="delta eq">unités</span></span></div>
     <div class="w kpi"><span class="l">En attente sur Lya</span><span class="v">${fmt(att)}</span><span class="f"><span class="delta eq">unités</span></span></div></div>
-  ${roots.map(r=>`<div class="w orgw"><div class="w-h org-top"><div><h3>${esc(r.equipe||("Structure de "+firstName(r.nom)))}</h3><div class="sub">${sdown(r.id).length+1} personnes · ${fmt(aslBranch(r.id))} unités en ${esc(monthName(month))}</div></div></div><div class="w-b">${spTree(r)}</div></div>`).join("")}`}
+  ${roots.map(r=>`<div class="w orgw"><div class="w-h org-top"><div><h3>${esc(all?(r.equipe||("Structure de "+firstName(r.nom))):"Mon organigramme")}</h3><div class="sub">${sdown(r.id).length+1} personnes · ${fmt(aslBranch(r.id))} unités en ${esc(monthName(month))} · clique sur une carte pour ouvrir la fiche</div></div></div><div class="w-b">${spTree(r)}</div></div>`).join("")}`}
+function renderStruct(){const el=$("v-struct");el.innerHTML=structOn()?structBlock(isMega()?"all":"me"):`<div class="w"><div class="empty"><b>Tu n'es pas encore relié(e) à la structure</b>Demande à Damien de relier ton compte à ton nom dans la structure.</div></div>`}
 $("v-struct").addEventListener("click",e=>{if(e.target.closest("[data-goimp]")){ACCTAB="imp";setView("acces");return}const c=e.target.closest("[data-sp]");if(c)openSP(c.dataset.sp)});
 $("v-struct").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.sp)openSP(e.target.dataset.sp)});
 function spChart(id){const hm=aslMonths().filter(m=>aslP(id,m)||sdown(id).some(x=>aslP(x.id,m)));let st=hm[0]||month,ms=[];if(st>month)st=month;for(let m=st;m<=month&&ms.length<24;m=shiftMonth(m,1))ms.push(m);if(ms.length<6){ms=[];for(let i=5;i>=0;i--)ms.push(shiftMonth(month,-i))}if(ms.length>12)ms=ms.slice(-12);const has=m=>!!ASLM[m];
@@ -1087,17 +1093,18 @@ function aslYm(name,wb){const mm=name.match(/(\d{1,2})[_\s./-]+(20\d\d)/);if(mm&
 async function parseASL(file){const X=await loadXLSX(),wb=X.read(await file.arrayBuffer(),{type:"array"}),per={},teams={};let total=0;
   wb.SheetNames.slice(1).forEach(sn=>{const head=sn.replace(/\(.*?\)/g,"").trim(),rows=X.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true});
     rows.slice(1).forEach(r=>{const u=r[6],pr=String(r[3]||"").replace(/\s+/g," ").trim();if(typeof u!=="number"||!pr)return;
-      const k=stok(pr);const o=per[k]=per[k]||{nom:pr,team:head,u:0,n:0,v:0,a:0,c:0,r:0,st:""};o.u+=u;o.n++;o[etatK(r[5])]+=u;const s=stNorm(r[4]);if(SST.indexOf(s)>SST.indexOf(o.st))o.st=s;total+=u;teams[head]=(teams[head]||0)+u})});
+      const k=stok(pr);const o=per[k]=per[k]||{nom:pr,team:head,u:0,n:0,v:0,a:0,c:0,r:0,st:"",ct:[]};o.u+=u;o.n++;o.ct.push({c:String(r[0]||"").replace(/\s+/g," ").trim(),s:String(r[1]||"").trim(),p:String(r[2]||"").trim(),st:stNorm(r[4]),e:String(r[5]||"").trim(),u:trunc3(u)});o[etatK(r[5])]+=u;const s=stNorm(r[4]);if(SST.indexOf(s)>SST.indexOf(o.st))o.st=s;total+=u;teams[head]=(teams[head]||0)+u})});
   return {fichier:file.name,ym:aslYm(file.name,wb),total,teams,list:Object.values(per).map(o=>({...o,match:matchS(o.nom),headM:matchS(o.team)}))}}
 const titleCase=n=>n.replace(/\b([A-ZÀ-Ý])([A-ZÀ-Ý]+)\b/g,(m,a,b)=>a+b.toLowerCase());
 async function commitASL(){const L=ASLPREV;if(!L||!L.length)return;const made={},created=[];
   L.forEach((f,i)=>{const inp=$("impYm"+i);if(inp&&inp.value)f.ym=inp.value});
   const yms=L.map(f=>f.ym);if(new Set(yms).size!==yms.length)throw new Error("Deux fichiers ont le même mois : corrige le mois de l'un d'eux.");
-  for(const f of [...L].sort((a,b)=>a.ym.localeCompare(b.ym))){const persons={};
+  for(const f of [...L].sort((a,b)=>a.ym.localeCompare(b.ym))){const persons={},cts={};
     for(const o of f.list){let id=(matchS(o.nom)||{}).id||made[stok(o.nom)];
       if(!id){id=skey(o.nom);const hm=matchS(o.team),mgr=hm?hm.id:(made[stok(o.team)]||"");const d={nom:titleCase(o.nom),statut:o.st||"JFA1",manager:mgr===id?"":mgr,role:"membre",verif:true,depuis:f.ym};await db.doc("structure/"+id).set(d);made[stok(o.nom)]=id;created.push(d.nom)}
-      const q=persons[id]=persons[id]||{u:0,n:0,v:0,a:0,c:0,r:0};["u","n","v","a","c","r"].forEach(k=>q[k]=trunc3((q[k]||0)+o[k]))}
-    await db.doc("asl/"+f.ym).set({mois:f.ym,importe:today(),fichier:f.fichier,total:trunc3(f.total),persons})}
+      const q=persons[id]=persons[id]||{u:0,n:0,v:0,a:0,c:0,r:0};["u","n","v","a","c","r"].forEach(k=>q[k]=trunc3((q[k]||0)+o[k]));(cts[id]=cts[id]||[]).push(...(o.ct||[]))}
+    await db.doc("asl/"+f.ym).set({mois:f.ym,importe:today(),fichier:f.fichier,total:trunc3(f.total),persons});
+    if(window.WEB)for(const [id,ct] of Object.entries(cts))try{await db.doc("aslc/"+id+"/mois/"+f.ym).set({mois:f.ym,contrats:ct})}catch(e){}}
   ASLPREV=null;month=[...yms].sort().pop();toast(`${L.length} ASL importé${L.length>1?"s":""}${created.length?` · ${created.length} nouvelle(s) personne(s) à vérifier`:""}`);renderAcces()}
 let INV=null,INVL=false,IPW=null;
 async function loadInv(){if(!window.SB||INVL)return;INVL=true;try{const {data}=await window.SB.from("invites").select("*").order("created_at",{ascending:false});INV=data||[]}catch(e){INV=[]}INVL=false;if(view==="acces"&&ACCTAB==="pers")renderAcces()}
@@ -1197,12 +1204,12 @@ function toast(txt,undo){$("toastTxt").textContent=txt;toastUndo=undo||null;$("t
 $("toastBtn").onclick=async()=>{const u=toastUndo;$("toast").hidden=true;if(u)await u()};
 
 // navigation
-const VV=()=>VIEWS.filter(v=>v[0]==="dash"||(v[0]==="acces"?isSuper():myMods().includes(v[0])));
+const VV=()=>VIEWS.filter(v=>v[0]==="dash"||(v[0]==="acces"?isSuper():v[0]==="team"?(myMods().includes("team")||myMods().includes("struct")):myMods().includes(v[0])));
 function buildNav(){$("nav").innerHTML=VV().map(([k,l])=>`<button type="button" data-v="${k}">${svgI(k)}<span>${l}</span>${k==="pros"?'<span class="cnt" data-cnt hidden></span>':""}</button>`).join("");
 $("tabbar").innerHTML=VV().map(([k,,s])=>`<button type="button" data-v="${k}">${svgI(k)}<span>${s}</span>${k==="pros"?'<span class="cnt" data-cnt hidden></span>':""}</button>`).join("")}
 buildNav();
 [$("nav"),$("tabbar")].forEach(n=>n.addEventListener("click",e=>{const b=e.target.closest("button");if(b)setView(b.dataset.v)}));
-function setView(v){const ok=VV().some(x=>x[0]===v);if(ok)WANT=v;else v="dash";view=v;document.body.dataset.view=v;shown=PAGE;if(ok)try{localStorage.setItem("mer-view",v)}catch(e){}
+function setView(v){if(v==="struct")v="team";const ok=VV().some(x=>x[0]===v);if(ok)WANT=v;else v="dash";view=v;document.body.dataset.view=v;shown=PAGE;if(ok)try{localStorage.setItem("mer-view",v)}catch(e){}
   document.querySelectorAll("[data-v]").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===v));
   VIEWS.forEach(([k])=>$("v-"+k).hidden=k!==v);
   const t=VIEWS.find(x=>x[0]===v)[1];$("title").textContent=t;$("ptitle").textContent=t;
@@ -1215,7 +1222,13 @@ const addNew=()=>{if(view==="team")openTeam(null);else openContact(null,view==="
 $("addTop").onclick=addNew;$("fab").onclick=addNew;
 function goPros(k){filt=k||"";setView("pros")}
 
-function render(){paintFoot();
+let ASLC={},ASLCK=null,ASLCU=null;
+function watchASLC(){if(!window.WEB||!db||!MYKEY||ASLCK===MYKEY)return;ASLCK=MYKEY;if(ASLCU)try{ASLCU()}catch(e){}ASLC={};
+  ASLCU=db.collection("aslc/"+MYKEY+"/mois").onSnapshot(s=>{ASLC={};s.docs.forEach(d=>{ASLC[d.id]=d.data()});if(view==="cli")render()},()=>{})}
+const ETAT={v:["Validé","ok"],a:["En attente sur Lya","wait"],c:["À corriger","ko"],r:["Refusé","ko"]};
+const aslcList=()=>Object.entries(ASLC).flatMap(([m,d])=>(d.contrats||[]).map((c,i)=>({...c,ym:m,i}))).sort((a,b)=>b.ym.localeCompare(a.ym)||String(a.c).localeCompare(String(b.c),"fr"));
+const etatChip=e=>{const k=etatK(e),[l,c]=ETAT[k]||ETAT.a;return `<span class="echip ${c}">${l}</span>`};
+function render(){paintFoot();watchASLC();
   {const cur=ym(today()),b=$("pastBan");if(b){b.hidden=month===cur;if(month!==cur)b.innerHTML=`<span>Tu regardes <b>${esc(monthName(month))}</b>${month>cur?" (mois à venir)":""}</span><button class="btn sm" type="button" data-backnow>Revenir à ${esc(monthName(cur))}</button>`}}
   $("mLabel").textContent=monthName(month);
   const due=dueRelances().length;document.querySelectorAll("[data-cnt]").forEach(c=>{c.hidden=!due;c.textContent=due});
@@ -1305,7 +1318,7 @@ function renderDash(){
   const obj=objOf(month),me=myUnits(month),tm=teamUnits(month),tot=me+(CFG.inclureEquipe?tm:0);
   const kpis=[
     {l:"Mes unités",v:fmt(me),u:1,d:delta(me,myUnits(pm)),s:spark(six.map(myUnits),"var(--blue)"),go:"cli"},
-    MODE==="member"&&!hasDown()?{l:"À relancer",v:dueRelances().length,d:'<span class="delta eq">aujourd\'hui</span>',s:"",f:"relance",novs:1}:{l:"Unités équipe",v:fmt(tm),u:1,d:delta(tm,teamUnits(pm)),s:spark(six.map(teamUnits),"var(--blue)"),go:"team"},
+    MODE==="member"&&!hasDown()?{l:"À relancer",v:dueRelances().length,d:'<span class="delta eq">aujourd\'hui</span>',s:"",f:"relance",novs:1}:{l:"Unités équipe",v:fmt(tm),u:1,d:aslOn(month)&&hasDown()?`<span class="delta eq">structure ${fmt(me+tm)} u</span>`:delta(tm,teamUnits(pm)),s:spark(six.map(teamUnits),"var(--blue)"),go:"team"},
     {l:"Contrats signés",v:signedCount(month),d:delta(signedCount(month),signedCount(pm)),s:spark(six.map(signedCount),"var(--blue)"),go:"cli"},
     {l:"RDV",v:rdvCount(month),d:delta(rdvCount(month),rdvCount(pm)),s:spark(six.map(rdvCount),"var(--blue)"),f:"rdv_cale"},
   ];
@@ -1366,7 +1379,7 @@ function renderDash(){
       <div class="w-b"><div class="funnel">${fs.map(([l,n,c,p])=>`<div class="fs" style="${cv(c)}"><span>${l}</span><div class="fbar"><i style="width:${Math.max(7,n/base*100)}%">${fmt(n)}</i></div><span class="pct">${p==null?"":Math.round(p*100)+" %"}</span></div>`).join("")}</div></div></div>
     <div class="w s6"><div class="w-h"><div><h3>6 derniers mois</h3><div class="sub">Unités moi + équipe face à l'objectif</div></div><button class="link" type="button" data-go="obj">Détail</button></div>
       <div class="w-b">${monthsChart(6,200)}<div class="legend"><span><i class="sw" style="background:var(--brand)"></i>Moi</span><span><i class="sw" style="background:var(--accent)"></i>Équipe</span><span><i class="sw line" style="background:var(--c-ref)"></i>Objectif</span></div></div></div>
-    <div class="w s6"><div class="w-h"><div><h3>${LBT.length?"Classement équipe":"Meilleurs recommandeurs"}</h3><div class="sub">${LBT.length?esc(monthName(month))+(LBS?" · ASL":""):"Contacts apportés par recommandation"}</div></div><button class="link" type="button" data-go="${LBS?"struct":LBT.length?"team":"pros"}">Voir</button></div>
+    <div class="w s6"><div class="w-h"><div><h3>${LBT.length?"Classement équipe":"Meilleurs recommandeurs"}</h3><div class="sub">${LBT.length?esc(monthName(month))+(LBS?" · ASL":""):"Contacts apportés par recommandation"}</div></div><button class="link" type="button" data-go="${LBT.length?"team":"pros"}">Voir</button></div>
       <div class="w-b">${LBT.length?topTeam.map((x,i)=>{const u=Number(x.unites?.[month])||0;return `<div class="lb" tabindex="0" ${x._sp?"data-sp":"data-team"}="${esc(x.id)}"><span class="rk">${i+1}</span><div class="nm"><div>${avatar(x,"av xs")}${esc(x.nom)} <span class="badge" style="${jv(x.statut)}">${esc(x.statut||"JFA1")}</span></div><div class="bar"><i style="width:${u/maxT*100}%;background:var(--blue)"></i></div></div><span class="u">${fmt(u)} u</span></div>`}).join(""):
         recs.length?recs.map((x,i)=>`<div class="lb"><span class="rk">${i+1}</span><div class="nm"><div>${esc(x.n)}</div><div class="bar"><i style="width:${x.c/recs[0].c*100}%;background:var(--blue)"></i></div></div><span class="u">${x.c} reco${x.c>1?"s":""}</span></div>`).join(""):'<div class="none">Ajoute tes recrues dans Équipe, ou note qui t\'a recommandé chaque contact.</div>'}</div></div>
     <div class="w s12" style="grid-column:span 12"><div class="w-h"><div><h3>Activité récente</h3><div class="sub">Derniers changements d'étape</div></div></div>
@@ -1461,17 +1474,27 @@ function renderCli(){
   const cl=P.filter(p=>p.statut==="signe").sort((a,b)=>String(unitMonth(b)).localeCompare(String(unitMonth(a)))||String(signedDate(b)).localeCompare(String(signedDate(a))));
   const all=cl.reduce((t,p)=>t+(Number(p.unites)||0),0),six=[];for(let i=5;i>=0;i--)six.push(shiftMonth(month,-i));
   const reco=cl.filter(p=>(p.recommandation||"").trim()).length;
+  const AL=aslcList(),crmK=new Set(cl.map(p=>stok(p.nom))),alBy={};AL.forEach(c=>{const k=stok(c.c);if(!alBy[k])alBy[k]=c});
+  const alM=AL.filter(c=>c.ym===month),alU=alM.reduce((t,c)=>t+(Number(c.u)||0),0);
+  const aslSec=AL.length?`<div class="w aslc" style="margin-bottom:16px"><div class="w-h"><div><h3>Mes contrats dans l'ASL</h3><div class="sub">${AL.length} contrat${AL.length>1?"s":""} · ${esc(monthName(month))} : ${alM.length} contrat${alM.length>1?"s":""}, ${fmt(alU)} u · mis à jour avec l'ASL du cabinet</div></div>${canWrite&&AL.filter(c=>!crmK.has(stok(c.c))).length>1?`<button class="btn ghost sm" type="button" data-aslall>Tout ajouter au CRM (${AL.filter(c=>!crmK.has(stok(c.c))).length})</button>`:""}</div>
+    <div class="table"><div class="thead tra"><span>Client</span><span>Produit</span><span>État</span><span>Compté en</span><span style="text-align:right">Unités</span><span></span></div>
+    ${AL.map(c=>{const inC=crmK.has(stok(c.c));return `<div class="tr tra"><div class="who"><span class="av" style="${stv("signe")}">${esc(initials(c.c))}</span><div class="n">${esc(c.c)}</div></div><div class="cell">${esc([c.p,c.s].filter(Boolean).join(" · ")||"—")}</div><div>${etatChip(c.e)}</div><div class="cell">${esc(monthShort(c.ym))}</div><div class="cell r">${fmt(c.u)}</div><div class="cell r">${inC?'<span class="okm">Dans ton CRM</span>':canWrite?`<button class="chip-t" type="button" data-asladd="${esc(c.ym)}|${c.i}">Ajouter au CRM</button>`:""}</div></div>`}).join("")}</div></div>`:"";
   $("v-cli").innerHTML=`<div class="grid k5" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px">
     <div class="w kpi"><span class="l">Contrats · ${esc(monthName(month))}</span><span class="v">${signedCount(month)}</span><span class="f">${delta(signedCount(month),signedCount(shiftMonth(month,-1)))}${spark(six.map(signedCount),"var(--c-sign)")}</span></div>
     <div class="w kpi"><span class="l">Unités du mois</span><span class="v">${fmt(crmUnits(month))}</span><span class="f">${delta(crmUnits(month),crmUnits(shiftMonth(month,-1)))}${spark(six.map(crmUnits),"var(--brand)")}</span></div>
     <div class="w kpi"><span class="l">Clients au total</span><span class="v">${cl.length} <small>· ${fmt(all)} u</small></span><span class="f"><span class="delta eq">${cl.length?fmt(all/cl.length):0} u / contrat</span></span></div>
     <div class="w kpi"><span class="l">Venus par recommandation</span><span class="v">${cl.length?Math.round(reco/cl.length*100):0} %</span><span class="f"><span class="delta eq">${reco} sur ${cl.length}</span></span></div>
   </div>
-  <div class="table"><div class="thead"><span>Client</span><span>Étape</span><span>Signé · compté en</span><span style="text-align:right">Unités</span><span>Infos</span></div>
-  ${cl.length?cl.map(p=>`<div class="tr" tabindex="0" data-id="${esc(p.id)}"><div class="who"><span class="av" style="${stv("signe")}">${esc(initials(p.nom))}</span><div class="n">${esc(p.nom)}<small>${esc(p.liste||"")}</small></div></div><div>${stSelect(p)}</div><div class="cell hide-m">${signedDate(p)?dmy(signedDate(p)):"—"} · <b>${monthShort(unitMonth(p))}</b>${p.annule?` <span class="m ko">· annulé (unités gardées)</span>`:p.demarre?` <span class="m ok">· démarré${p.dateDebut?" le "+dmy(p.dateDebut):""}</span>`:` <span class="m ko">· ${p.dateDebut?"démarre "+dmy(p.dateDebut):"démarrage à fixer"}</span>`}</div><div class="cell r">${fmt(p.unites)}</div><div class="cell m meta-m">${[p.produit?`<b>${esc(p.produit)}</b>`:"",innerWidth<860?`compté en ${monthShort(unitMonth(p))}`:"",p.recommandation?`via ${esc(p.recommandation)}`:"",esc(p.note||"")].filter(Boolean).join(" · ")}</div></div>`).join(""):'<div class="empty"><b>Pas encore de client</b>Passe un contact en « Contrat signé » ou ajoute un client.</div>'}</div>`;
+  ${cl.length?"":aslSec}<div class="table"><div class="thead"><span>Client</span><span>Étape</span><span>Signé · compté en</span><span style="text-align:right">Unités</span><span>Infos</span></div>
+  ${cl.length?cl.map(p=>`<div class="tr" tabindex="0" data-id="${esc(p.id)}"><div class="who"><span class="av" style="${stv("signe")}">${esc(initials(p.nom))}</span><div class="n">${esc(p.nom)}<small>${esc(p.liste||"")}</small></div></div><div>${stSelect(p)}</div><div class="cell hide-m">${signedDate(p)?dmy(signedDate(p)):"—"} · <b>${monthShort(unitMonth(p))}</b>${p.annule?` <span class="m ko">· annulé (unités gardées)</span>`:p.demarre?` <span class="m ok">· démarré${p.dateDebut?" le "+dmy(p.dateDebut):""}</span>`:` <span class="m ko">· ${p.dateDebut?"démarre "+dmy(p.dateDebut):"démarrage à fixer"}</span>`}${alBy[stok(p.nom)]?" "+etatChip(alBy[stok(p.nom)].e):""}</div><div class="cell r">${fmt(p.unites)}</div><div class="cell m meta-m">${[p.produit?`<b>${esc(p.produit)}</b>`:"",innerWidth<860?`compté en ${monthShort(unitMonth(p))}`:"",p.recommandation?`via ${esc(p.recommandation)}`:"",esc(p.note||"")].filter(Boolean).join(" · ")}</div></div>`).join(""):AL.length?"":'<div class="empty"><b>Pas encore de client</b>Passe un contact en « Contrat signé » ou ajoute un client.</div>'}</div>${cl.length?`<div style="height:16px"></div>`+aslSec:""}`;
 }
 const vc=$("v-cli");
-vc.addEventListener("click",e=>{if(e.target.closest(".st"))return;const r=e.target.closest("[data-id]");if(r)openContact(P.find(p=>p.id===r.dataset.id))});
+const aslToPros=(c,m,o)=>({nom:c.c,statut:"signe",liste:"ASL",tel:"",recommandation:"",note:"Ajouté depuis l'ASL",unites:Number(c.u)||0,produit:[c.p,c.s].filter(Boolean).join(" · ")||null,dateSignature:m+"-01",moisUnites:m,dateDebut:null,demarre:false,statutRem:myStatut(),annule:false,dateRdv:null,dateRelance:null,maj:today(),historique:histPush({},"signe"),ordre:o});
+vc.addEventListener("click",async e=>{const aa=e.target.closest("[data-aslall]");if(aa){aa.disabled=true;const have=new Set(P.filter(p=>p.statut==="signe").map(p=>stok(p.nom)));let o=P.reduce((x,q)=>Math.max(x,q.ordre||0),0),n=0;
+    try{for(const c of aslcList()){const k=stok(c.c);if(have.has(k))continue;have.add(k);await db.collection(PROS).add(aslToPros(c,c.ym,++o));n++}toast(`${n} client${n>1?"s":""} ajouté${n>1?"s":""} à ton CRM`)}catch(err){aa.disabled=false;showErr(msg(err))}return}
+  const ad=e.target.closest("[data-asladd]");if(ad){const [m,i]=ad.dataset.asladd.split("|"),c=(ASLC[m]?.contrats||[])[Number(i)];if(!c)return;ad.disabled=true;
+    try{await db.collection(PROS).add(aslToPros(c,m,P.reduce((x,q)=>Math.max(x,q.ordre||0),0)+1));toast(`${c.c} ajouté à ton CRM`)}catch(err){ad.disabled=false;showErr(msg(err))}return}
+  if(e.target.closest(".st"))return;const r=e.target.closest("[data-id]");if(r)openContact(P.find(p=>p.id===r.dataset.id))});
 vc.addEventListener("change",async e=>{if(!e.target.classList.contains("st"))return;await setStatus(P.find(x=>x.id===e.target.closest("[data-id]").dataset.id),e.target.value,true)});
 
 // ---------- équipe ----------
@@ -1494,11 +1517,14 @@ function orgChart(){const roots=[...(KIDS[""]||[])].sort((a,b)=>branchU(b,month)
   <div class="org-leg"><div><h4>Statuts</h4><div class="lg-s">${[...JFA].reverse().map(j=>`<span class="li" style="${cv(j.v)}"><i class="sw ${sw[j.k]}"></i><span><b>${j.k}</b> · ${esc(j.d)} · ${rate(j.k)}</span><b>${cnt[j.k]}</b></span>`).join("")}<span class="li" style="--c:var(--accent);--b:transparent"><i class="sw" style="box-shadow:0 0 0 2px var(--accent);border-color:#fff"></i><span>Mon binôme</span></span></div></div>
   <div><h4>Mon niveau de leadership avec chacun</h4><div class="lg-l">${LEAD.map(([k,l])=>`<span><b>${k}</b>${l}</span>`).join("")}</div></div></div></div></div>`}
 function renderTeam(){
+  if(structOn()){const sc=isMega()&&TSCOPE==="all"?"all":"me",rb=RESBAN();
+    $("v-team").innerHTML=rb+(isMega()&&meS()?`<div style="display:flex;justify-content:flex-end;margin:0 0 4px"><div class="seg" role="group" aria-label="Périmètre"><button type="button" data-tscope="me" aria-pressed="${sc==="me"}">Ma structure</button><button type="button" data-tscope="all" aria-pressed="${sc==="all"}">Tout le cabinet</button></div></div>`:"")+structBlock(sc)
+      +(MODE==="manager"&&T.length?`<div class="w" style="margin-top:16px"><div class="w-h"><div><h3>Recrues suivies à la main</h3><div class="sub">Ta saisie manuelle, en complément de l'ASL · ${esc(monthName(month))}</div></div></div><div class="w-b">${T.map(t=>{const u=Number(t.unites?.[month])||0;return `<div class="lb" tabindex="0" data-team="${esc(t.id)}"><div class="nm"><div>${avatar(t,"av xs")}${esc(t.nom)} <span class="badge" style="${jv(t.statut)}">${esc(t.statut||"JFA1")}</span></div></div><span class="u">${fmt(u)} u</span></div>`}).join("")}</div></div>`:"");return}
   const tm=teamUnits(month),pm=teamUnits(shiftMonth(month,-1)),six=[];for(let i=5;i>=0;i--)six.push(shiftMonth(month,-i));
   const tree=teamTree();
   const byS=Object.fromEntries(JFA.map(j=>[j.k,T.filter(t=>(t.statut||"JFA1")===j.k).length]));
   const active=T.filter(t=>Number(t.unites?.[month])>0).length;
-  $("v-team").innerHTML=`<a class="resban" href="ressources.html" target="_blank" rel="noopener"><span class="ico" style="--c:var(--brand);--b:var(--brand-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg></span><span class="t"><b>Espace ressources</b><small>Process de vente, objections, calculateur : la page à partager à tes recrues</small></span><span class="btn ghost sm">Ouvrir ↗</span></a>${MODE!=="manager"||M.length?"":`<div class="note" style="margin-bottom:16px"><span>Pour relier un collaborateur : bouton « Partager » de cette page, invite-le par e-mail avec l'accès <b>Éditeur</b>. À sa première connexion, il apparaît ici et ses unités remontent automatiquement.</span></div>`}<div class="grid k5" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px">
+  $("v-team").innerHTML=`${RESBAN()}${MODE!=="manager"||M.length?"":`<div class="note" style="margin-bottom:16px"><span>Pour relier un collaborateur : bouton « Partager » de cette page, invite-le par e-mail avec l'accès <b>Éditeur</b>. À sa première connexion, il apparaît ici et ses unités remontent automatiquement.</span></div>`}<div class="grid k5" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px">
     <div class="w kpi"><span class="l">Unités équipe</span><span class="v">${fmt(tm)}</span><span class="f">${delta(tm,pm)}${spark(six.map(teamUnits),"var(--blue)")}</span></div>
     <div class="w kpi"><span class="l">Recrues</span><span class="v">${T.length}</span><span class="f"><span class="delta eq">${active} actives ce mois</span></span></div>
     <div class="w kpi"><span class="l">Répartition</span><span class="v" style="display:flex;gap:6px;flex-wrap:wrap;font-size:14px">${JFA.map(j=>`<span class="badge" style="${jv(j.k)}">${j.k} · ${byS[j.k]}</span>`).join("")}</span><span class="f"></span></div>
@@ -1507,8 +1533,8 @@ function renderTeam(){
   <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><div class="seg" role="group" aria-label="Affichage"><button type="button" data-teamv="org" aria-pressed="${TEAMV==="org"}">Organigramme</button><button type="button" data-teamv="tab" aria-pressed="${TEAMV==="tab"}">Tableau</button></div></div>${TEAMV==="org"?orgChart():""}<div class="table" ${TEAMV==="org"?"hidden":""}><div class="thead trt"><span>Recrue</span><span>Statut</span><span>Objectif du mois</span><span style="text-align:right">Ses unités</span><span style="text-align:right">Avec son équipe</span></div>
   ${tree.length?tree.map(({t,l})=>{const u=Number(t.unites?.[month])||0,o=Number(t.objectif)||0,dn=downline(t),br=branchU(t,month);return `<div class="tr trt" tabindex="0" data-team="${esc(t.id)}"><div class="who" style="padding-left:${Math.min(l,4)*22}px">${l?'<span class="lvl">└</span>':""}${avatar(t)}<div class="n">${esc(t.nom)}<small>${t._new?'<b class="live new">Nouveau compte · à rattacher</b> ':t._m?(t.saisie==="manuel"?'<b class="live">Connecté · saisie par toi</b> ':'<b class="live">Connecté</b> '):""}${t.dateEntree?"Depuis le "+dmy(t.dateEntree):""}${t.recommandation?" · via "+esc(t.recommandation):""}${dn.length?`${t.dateEntree||t.recommandation?" · ":""}${dn.length} dans son équipe`:""}</small></div></div><div class="hide-m"><span class="badge" style="${jv(t.statut)}">${esc(t.statut||"JFA1")}</span></div><div class="prog">${o?`<div class="bar"><i style="width:${Math.min(100,u/o*100)}%;background:var(--blue)"></i></div><span>${Math.round(u/o*100)} % de ${fmt(o)}</span>`:`<span>Pas d'objectif</span>`}</div><div class="cell r">${fmt(u)}${eurTxt(u,t.statut)?`<small class="eur">${eurTxt(u,t.statut)}</small>`:""}</div><div class="cell r hide-m">${dn.length?fmt(br):'<span style="color:var(--faint)">—</span>'}</div></div>`}).join(""):'<div class="empty"><b>Aucune recrue</b>Ajoute-les ici, ou depuis la fiche d\'un contact avec « Ajouter à mon équipe ».</div>'}</div>`;
 }
-$("v-team").addEventListener("click",e=>{const an=e.target.closest("[data-team^='a:']");if(an){const t=T.find(x=>x.id===an.dataset.team);if(t)openAnn(t);return}const v=e.target.closest("[data-teamv]");if(v){TEAMV=v.dataset.teamv;try{localStorage.setItem("mer-teamv",TEAMV)}catch(x){}renderTeam();return}const r=e.target.closest("[data-team]");if(r)openTeam(T.find(t=>t.id===r.dataset.team))});
-$("v-team").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.team&&e.target.dataset.team.startsWith("a:")){const t=T.find(x=>x.id===e.target.dataset.team);if(t)openAnn(t);return}if(e.key==="Enter"&&e.target.dataset.team)openTeam(T.find(t=>t.id===e.target.dataset.team))});
+$("v-team").addEventListener("click",e=>{if(e.target.closest("[data-goimp]")){ACCTAB="imp";setView("acces");return}const ts=e.target.closest("[data-tscope]");if(ts){TSCOPE=ts.dataset.tscope;try{localStorage.setItem("mer-tscope",TSCOPE)}catch(x){}renderTeam();return}const sp=e.target.closest("[data-sp]");if(sp){openSP(sp.dataset.sp);return}const an=e.target.closest("[data-team^='a:']");if(an){const t=T.find(x=>x.id===an.dataset.team);if(t)openAnn(t);return}const v=e.target.closest("[data-teamv]");if(v){TEAMV=v.dataset.teamv;try{localStorage.setItem("mer-teamv",TEAMV)}catch(x){}renderTeam();return}const r=e.target.closest("[data-team]");if(r)openTeam(T.find(t=>t.id===r.dataset.team))});
+$("v-team").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.sp){openSP(e.target.dataset.sp);return}if(e.key==="Enter"&&e.target.dataset.team&&e.target.dataset.team.startsWith("a:")){const t=T.find(x=>x.id===e.target.dataset.team);if(t)openAnn(t);return}if(e.key==="Enter"&&e.target.dataset.team)openTeam(T.find(t=>t.id===e.target.dataset.team))});
 
 // ---------- objectifs ----------
 function renderObj(){
