@@ -1238,7 +1238,7 @@ function render(){paintFoot();watchASLC();
   $("mLabel").textContent=monthName(month);
   const due=dueRelances().length;document.querySelectorAll("[data-cnt]").forEach(c=>{c.hidden=!due;c.textContent=due});
   const obj=objOf(ym(today())),tot=totalUnits(ym(today())),me=myUnits(ym(today()));
-  $("goalMini").innerHTML=`<div class="row1"><span><b>${fmt(tot)}</b> / ${fmt(obj)} u</span><span>${obj?Math.round(tot/obj*100):0} %</span></div><div class="bar"><i style="width:${obj?Math.min(100,me/obj*100):0}%;background:var(--brand)"></i><i style="width:${obj&&CFG.inclureEquipe?Math.min(100,teamUnits(ym(today()))/obj*100):0}%;background:var(--blue)"></i></div>`;
+  $("goalMini").innerHTML=`<div class="row1"><span><b>${fmt(tot)}</b> / ${fmt(obj)} u</span><span>${obj?Math.round(tot/obj*100):0} %</span></div><div class="bar">${(()=>{const m1=Math.min(me,tot),pa=obj?Math.min(100,m1/obj*100):0,pb=obj?Math.min(100-pa,Math.max(0,tot-m1)/obj*100):0;return `<i style="width:${pa}%;background:var(--brand)"></i><i style="width:${pb}%;background:var(--blue)"></i>`})()}</div>`;
   ({dash:renderDash,pros:renderPros,cli:renderCli,calc:renderCalc,simu:renderSimu,car:renderCar,team:renderTeam,obj:renderObj,struct:renderStruct,acces:renderAcces})[view]();syncAnn();
   if(view==="dash"&&loaded&&!dashAnimated){dashAnimated=true;const el=$("v-dash");el.classList.add("anim");countUp(el);setTimeout(()=>el.classList.remove("anim"),1500)}
 }
