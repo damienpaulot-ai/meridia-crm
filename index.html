@@ -1000,7 +1000,7 @@ const ALLM=MODS.map(m=>m[0]);
 const DROITS0={JFA1:["dash","pros","cli","res"],JFA2:["dash","pros","cli","calc","simu","obj","res"],JFA3:["dash","pros","cli","calc","simu","car","obj","struct","res"],JFAC:ALLM,FA:ALLM};
 const SST=["JFA1","JFA2","JFA3","JFAC","FA","FC","CD","CR","CN"];
 const ROLES=[["membre","Conseiller"],["manager","Manager"],["superadmin","Super admin"]];
-let WANT=null,STRUCT=[],SKIDS={},ASLM={},DROITS=null,LIENS={},MYKEY=null,ACCTAB="pers",ASLPREV=null;
+let WANT=null,STRUCTALL=[],STRUCT=[],SKIDS={},ASLM={},DROITS=null,LIENS={},MYKEY=null,ACCTAB="pers",ASLPREV=null;
 const skey=n=>String(n||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const stok=n=>skey(n).split("-").filter(Boolean).sort().join(" ");
 const SP=id=>STRUCT.find(x=>x.id===id);
@@ -1109,7 +1109,7 @@ async function commitASL(){const L=ASLPREV;if(!L||!L.length)return;const made={}
   L.forEach((f,i)=>{const inp=$("impYm"+i);if(inp&&inp.value)f.ym=inp.value});
   const yms=L.map(f=>f.ym);if(new Set(yms).size!==yms.length)throw new Error("Deux fichiers ont le même mois : corrige le mois de l'un d'eux.");
   for(const f of [...L].sort((a,b)=>a.ym.localeCompare(b.ym))){const persons={},cts={};
-    for(const o of f.list){let id=(matchS(o.nom)||{}).id||made[stok(o.nom)];
+    for(const o of f.list){let id=(matchS(o.nom)||{}).id||made[stok(o.nom)]||(STRUCTALL.find(p=>p.supprime&&(p.id===skey(o.nom)||stok(p.nom||"")===stok(o.nom)))||{}).id;
       if(!id){id=skey(o.nom);const hm=matchS(o.team),mgr=hm?hm.id:(made[stok(o.team)]||"");const d={nom:titleCase(o.nom),statut:o.st||"JFA1",manager:mgr===id?"":mgr,role:"membre",verif:true,depuis:f.ym};await db.doc("structure/"+id).set(d);made[stok(o.nom)]=id;created.push(d.nom)}
       const q=persons[id]=persons[id]||{u:0,n:0,v:0,a:0,c:0,r:0};["u","n","v","a","c","r"].forEach(k=>q[k]=trunc3((q[k]||0)+o[k]));(cts[id]=cts[id]||[]).push(...(o.ct||[]))}
     await db.doc("asl/"+f.ym).set({mois:f.ym,importe:today(),fichier:f.fichier,total:trunc3(f.total),persons});
@@ -2169,7 +2169,7 @@ setView(view);
   }
   window.claude.use("downloads").then(d=>{dl=d;if(view==="obj")render()}).catch(()=>{});
   if(MODE==="manager")window.claude.use("assets").then(a=>{ASSETS=a}).catch(()=>{});
-  db.collection("structure").onSnapshot(s=>{STRUCT=s.docs.map(clean).filter(p=>!p.supprime);deriveStruct();
+  db.collection("structure").onSnapshot(s=>{STRUCTALL=s.docs.map(clean);STRUCT=STRUCTALL.filter(p=>!p.supprime);deriveStruct();
     if(MODE==="manager"&&SELF){const dp=SP("damien-paulot");if(dp&&!dp.uid&&!STRUCT.some(x=>x.uid===SELF)){const {id:_i,...rest}=dp;db.doc("structure/damien-paulot").set({...rest,uid:SELF}).catch(()=>{})}}
     if(MODE==="member"&&UID){if(meS()?.bloque||ACC[UID]?.bloque)showPortal("blocked");else if(PORTAL==="blocked")hidePortal()}
     refreshNav();paintPortal();render()},()=>{});
