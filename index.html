@@ -1191,8 +1191,12 @@ function personChart(t,n=6){const ms=[];for(let i=n-1;i>=0;i--)ms.push(shiftMont
   if(obj)g+=`<line x1="${L}" x2="${W-R}" y1="${Y(obj)}" y2="${Y(obj)}" stroke="var(--c-ref)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Unités par mois de ${esc(t.nom)}">${g}</svg>`}
 const teamCrm=m=>T.reduce((s,x)=>s+(Number(x.unites?.[m])||0),0);
-const teamUnits=m=>aslOn(m)&&hasDown()?aslTeam(m):teamCrm(m);
-const totalUnits=m=>myUnits(m)+(CFG.inclureEquipe?teamUnits(m):0);
+// Unités d'équipe = toute la structure, moi compris (comme dans l'ASL)
+const teamUnits=m=>aslOn(m)&&hasDown()?aslBranch(MYKEY,m):teamCrm(m);
+const teamOnly=m=>aslOn(m)&&hasDown()?aslTeam(m):teamCrm(m);
+// FA et au-dessus : le tableau de bord se lit uniquement en unités d'équipe
+const teamMode=()=>!!(MYKEY&&meS()&&hasDown()&&SST.indexOf(meS().statut)>=4);
+const totalUnits=m=>aslOn(m)&&hasDown()?((teamMode()||CFG.inclureEquipe)?aslBranch(MYKEY,m):aslU(MYKEY,m)):myUnits(m)+(CFG.inclureEquipe?teamCrm(m):0);
 const signedCount=m=>P.filter(p=>p.statut==="signe"&&unitMonth(p)===m).length;
 const rdvCount=m=>P.filter(p=>["rdv_cale","rdv_fait","signe"].includes(p.statut)&&p.dateRdv&&ym(p.dateRdv)===m).length;
 const listes=()=>[...new Set([...BASE_LISTES,...P.map(r=>r.liste).filter(Boolean)])];
@@ -1247,9 +1251,9 @@ function spark(vals,color){
 function delta(cur,prev){if(!prev&&!cur)return'<span class="delta eq">—</span>';if(!prev)return'<span class="delta up">nouveau</span>';const d=Math.round((cur-prev)/prev*100);return `<span class="delta ${d>0?"up":d<0?"down":"eq"}">${d>0?"+":""}${d} %</span>`}
 function progressChart(){
   const [y,mo]=month.split("-").map(Number),dim=new Date(y,mo,0).getDate();
-  const teamPart=CFG.inclureEquipe?teamUnits(month):0;
   const obj=objOf(month),daily=new Array(dim+1).fill(0);
   P.forEach(p=>{if(p.statut==="signe"&&unitMonth(p)===month){const sd=signedDate(p);const d=ym(sd)===month?(Number(sd.slice(8,10))||1):1;daily[d]+=Number(p.unites)||0}});
+  const teamPart=aslOn(month)?Math.max(0,totalUnits(month)-daily.reduce((a,b)=>a+b,0)):(CFG.inclureEquipe?teamCrm(month):0);
   const cum=[];let acc=teamPart;for(let d=0;d<=dim;d++){acc+=d?daily[d]:0;cum.push(acc)}
   const isNow=month===ym(today()),lastDay=isNow?new Date().getDate():(month<ym(today())?dim:0);
   const W=720,H=230,L=44,R=12,Tp=12,B=26,pw=W-L-R,ph=H-Tp-B;
@@ -1268,7 +1272,7 @@ function progressChart(){
 }
 function monthsChart(n,h=220){
   const ms=[];for(let i=n-1;i>=0;i--)ms.push(shiftMonth(month,-i));
-  const data=ms.map(m=>({m,obj:objOf(m),me:myUnits(m),tm:CFG.inclureEquipe?teamUnits(m):0}));
+  const data=ms.map(m=>({m,obj:objOf(m),me:Math.min(myUnits(m),totalUnits(m)),tm:Math.max(0,totalUnits(m)-myUnits(m))}));
   const top=Math.ceil(Math.max(100,...data.map(d=>Math.max(d.obj,d.me+d.tm)))*1.12/250)*250;
   const W=720,H=h,L=44,R=8,Tp=16,B=26,pw=W-L-R,ph=H-Tp-B,bw=Math.min(46,pw/n*0.5),Y=v=>Tp+ph-v/top*ph;
   let g="";for(let k=0;k<=4;k++){const v=top*k/4;g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`}
@@ -1315,10 +1319,16 @@ async function markStarted(p){if(!p)return;const prev={demarre:p.demarre??null,d
 function renderDash(){
   if(!loaded){$("v-dash").innerHTML='<div class="empty">Chargement de tes données…</div>';return}
   const pm=shiftMonth(month,-1),six=[];for(let i=5;i>=0;i--)six.push(shiftMonth(month,-i));
-  const obj=objOf(month),me=myUnits(month),tm=teamUnits(month),tot=me+(CFG.inclureEquipe?tm:0);
-  const kpis=[
+  const obj=objOf(month),me=myUnits(month),tm=teamUnits(month),tot=totalUnits(month),TM=teamMode()&&aslOn(month);
+  const SV=TM?[meS(),...sdown(MYKEY)]:[],sAsl=k=>SV.reduce((t,p)=>t+(Number(aslP(p.id)?.[k])||0),0);
+  const kpis=TM?[
+    {l:"Unités équipe",v:fmt(tm),u:1,d:`<span class="delta eq">${SV.length} personnes · source ASL</span>`,s:spark(six.map(teamUnits),"var(--blue)"),go:"team",novs:1},
+    {l:"Contrats équipe",v:sAsl("n"),d:delta(sAsl("n"),SV.reduce((t,p)=>t+(Number(aslP(p.id,pm)?.n)||0),0)),s:"",go:"team"},
+    {l:"Validé",v:fmt(sAsl("v")),u:1,d:'<span class="delta eq">unités</span>',s:"",go:"team",novs:1},
+    {l:"En attente sur Lya",v:fmt(sAsl("a")),u:1,d:'<span class="delta eq">unités</span>',s:"",go:"team",novs:1},
+  ]:[
     {l:"Mes unités",v:fmt(me),u:1,d:delta(me,myUnits(pm)),s:spark(six.map(myUnits),"var(--blue)"),go:"cli"},
-    MODE==="member"&&!hasDown()?{l:"À relancer",v:dueRelances().length,d:'<span class="delta eq">aujourd\'hui</span>',s:"",f:"relance",novs:1}:{l:"Unités équipe",v:fmt(tm),u:1,d:aslOn(month)&&hasDown()?`<span class="delta eq">structure ${fmt(me+tm)} u</span>`:delta(tm,teamUnits(pm)),s:spark(six.map(teamUnits),"var(--blue)"),go:"team"},
+    MODE==="member"&&!hasDown()?{l:"À relancer",v:dueRelances().length,d:'<span class="delta eq">aujourd\'hui</span>',s:"",f:"relance",novs:1}:{l:"Unités équipe",v:fmt(tm),u:1,d:aslOn(month)&&hasDown()?`<span class="delta eq">dont ${fmt(me)} perso</span>`:delta(tm,teamUnits(pm)),s:spark(six.map(teamUnits),"var(--blue)"),go:"team"},
     {l:"Contrats signés",v:signedCount(month),d:delta(signedCount(month),signedCount(pm)),s:spark(six.map(signedCount),"var(--blue)"),go:"cli"},
     {l:"RDV",v:rdvCount(month),d:delta(rdvCount(month),rdvCount(pm)),s:spark(six.map(rdvCount),"var(--blue)"),f:"rdv_cale"},
   ];
@@ -1539,7 +1549,7 @@ $("v-team").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.
 // ---------- objectifs ----------
 function renderObj(){
   const ms=[];for(let i=11;i>=0;i--)ms.push(shiftMonth(month,-i));
-  const data=ms.map(m=>({m,obj:objOf(m),me:myUnits(m),tm:teamUnits(m)}));
+  const data=ms.map(m=>({m,obj:objOf(m),me:myUnits(m),tm:teamOnly(m)}));
   const hit=data.filter(d=>d.me+(CFG.inclureEquipe?d.tm:0)>=d.obj&&d.obj).length;
   const best=data.reduce((b,d)=>{const t=d.me+(CFG.inclureEquipe?d.tm:0);return t>b.t?{m:d.m,t}:b},{m:null,t:0});
   $("v-obj").innerHTML=`<div class="grid c12">
