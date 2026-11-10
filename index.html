@@ -1056,6 +1056,14 @@ function spChart(id){const hm=aslMonths().filter(m=>aslP(id,m)||sdown(id).some(x
     if(tot)g+=`<text x="${cx}" y="${Y(tot)-5}" text-anchor="middle" style="fill:var(--ink);font-weight:700">${fmt(tot)}</text>`;
     g+=`<text x="${cx}" y="${H-6}" text-anchor="middle"${d.m===month?' style="font-weight:700;fill:var(--ink)"':""}>${esc(monthShort(d.m))}${has(d.m)?"":"*"}</text>`});
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Unités ASL par mois">${g}</svg>`}
+document.addEventListener("click",async e=>{
+  if(e.target.closest("[data-spdel-ask]")){const z=$("spDelZone"),p=SP((sheetCtx?.kind==="sp"&&sheetCtx.id));if(!z||!p)return;const n=(SKIDS[p.id]||[]).length;
+    z.innerHTML=`<div class="ask">Retirer ${esc(p.nom)} ?${n?` Ses ${n} recrue${n>1?"s":""} passe${n>1?"nt":""} sous ${esc(SP(p.manager)?.nom||"la tête d'équipe")}.`:""} <button class="btn danger sm" type="button" data-spdel-yes>Oui, retirer</button><button class="btn ghost sm" type="button" data-spdel-no>Non</button></div>`;return}
+  if(e.target.closest("[data-spdel-no]")){const z=$("spDelZone"),p=SP((sheetCtx?.kind==="sp"&&sheetCtx.id));if(z&&p)z.innerHTML=`<button class="btn danger sm" type="button" data-spdel-ask>Retirer ${esc(p.nom)} de l'équipe</button>`;return}
+  if(e.target.closest("[data-spdel-yes]")){const p=SP((sheetCtx?.kind==="sp"&&sheetCtx.id));if(!p)return;e.target.disabled=true;
+    try{for(const k of (SKIDS[p.id]||[]))await db.doc("structure/"+k.id).update({manager:p.manager||""});
+      await db.doc("structure/"+p.id).update({supprime:true,supprimeLe:today()});closeSheet();toast(`${p.nom} retiré(e) de l'équipe`)}catch(err){e.target.disabled=false;showErr(msg(err))}}
+});
 function openSP(id){const p=id?SP(id):null,mg=id?canManage(id):isSuper();if(id&&!p)return;const a=p?aslP(p.id):null,dn=p?sdown(p.id):[];
   const pool=visS().filter(x=>!p||(x.id!==p.id&&!dn.some(d=>d.id===x.id))).sort((x,y)=>String(x.nom).localeCompare(String(y.nom),"fr"));
   const cust=!!p?.mods;
@@ -1072,7 +1080,7 @@ function openSP(id){const p=id?SP(id):null,mg=id?canManage(id):isSuper();if(id&&
       <div class="spmods" ${cust?"":"hidden"}>${MODS.map(([k,l])=>`<label class="check"><input type="checkbox" data-mod="${k}" ${(p?.mods||(DROITS||DROITS0)[p?.statut||"JFA1"]||[]).includes(k)?"checked":""}> ${l}</label>`).join("")}</div></div>
     <div class="two"><label class="check"><input type="checkbox" id="spBin" ${p?.binome?"checked":""}> Binôme</label><label class="check"><input type="checkbox" id="spVf" ${p?.verif?"checked":""}> À vérifier</label></div>
     ${p&&p.id!==MYKEY?`<label class="check"><input type="checkbox" id="spBlk" ${p?.bloque?"checked":""}> Accès suspendu</label>`:""}
-    <p class="err" id="sErr"></p>${p&&isMega()?`<div class="sec-t">Actions</div>${delBlock(p.nom)}`:""}`:`<div class="two"><div class="field"><span class="lab">Statut</span><span class="badge" style="${jv(p.statut)};align-self:flex-start">${esc(p.statut)}</span></div><div class="field"><span class="lab">Manager</span><span>${esc(SP(p.manager)?.nom||"—")}</span></div></div>`;
+    <p class="err" id="sErr"></p>${p&&p.id!==MYKEY&&canWrite?`<div class="sec-t">Actions</div><div id="spDelZone"><button class="btn danger sm" type="button" data-spdel-ask>Retirer ${esc(p.nom)} de l'équipe</button></div>`:""}`:`<div class="two"><div class="field"><span class="lab">Statut</span><span class="badge" style="${jv(p.statut)};align-self:flex-start">${esc(p.statut)}</span></div><div class="field"><span class="lab">Manager</span><span>${esc(SP(p.manager)?.nom||"—")}</span></div></div>`;
   openSheet(p?p.nom:"Ajouter une personne",view+edit,mg?`<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="submit">Enregistrer</button>`:`<button class="btn" type="button" data-close>Fermer</button>`,{kind:"sp",id:p?.id||null,path:p?"structure/"+p.id:null,row:p})}
 $("sheet").addEventListener("click",e=>{const b=e.target.closest("[data-spm]");if(!b)return;$("sheet").querySelectorAll("[data-spm]").forEach(x=>x.setAttribute("aria-pressed",x===b));$("sheet").querySelector(".spmods").hidden=b.dataset.spm!=="cus"});
 async function saveSP(c){const nom=$("spNom").value.trim();if(!nom){showErr("Indique un nom.");return}
@@ -2161,7 +2169,7 @@ setView(view);
   }
   window.claude.use("downloads").then(d=>{dl=d;if(view==="obj")render()}).catch(()=>{});
   if(MODE==="manager")window.claude.use("assets").then(a=>{ASSETS=a}).catch(()=>{});
-  db.collection("structure").onSnapshot(s=>{STRUCT=s.docs.map(clean);deriveStruct();
+  db.collection("structure").onSnapshot(s=>{STRUCT=s.docs.map(clean).filter(p=>!p.supprime);deriveStruct();
     if(MODE==="manager"&&SELF){const dp=SP("damien-paulot");if(dp&&!dp.uid&&!STRUCT.some(x=>x.uid===SELF)){const {id:_i,...rest}=dp;db.doc("structure/damien-paulot").set({...rest,uid:SELF}).catch(()=>{})}}
     if(MODE==="member"&&UID){if(meS()?.bloque||ACC[UID]?.bloque)showPortal("blocked");else if(PORTAL==="blocked")hidePortal()}
     refreshNav();paintPortal();render()},()=>{});
