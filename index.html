@@ -986,7 +986,15 @@ const objOf=m=>Number(CFG.objectifs?.[m]??CFG.objectifMensuel??1500)||0;
 const signedDate=p=>p.dateSignature||p.maj||"";
 const unitMonth=p=>p.moisUnites||ym(signedDate(p));
 const crmUnits=m=>P.filter(p=>p.statut==="signe"&&unitMonth(p)===m).reduce((t,p)=>t+(Number(p.unites)||0),0);
-const myUnits=m=>aslOn(m)?aslU(MYKEY,m):crmUnits(m);
+// Contrats signés dans le CRM mais pas encore remontés dans l'ASL : ils s'ajoutent aux unités ASL
+const nameTok=n=>new Set(skey(n).split("-").filter(t=>t.length>1));
+function crmExtraList(m){const L=P.filter(p=>p.statut==="signe"&&!p.annule&&unitMonth(p)===m&&p.liste!=="ASL");if(!L.length)return[];if(!window.WEB||!ASLCOK)return null;
+  const C=aslcList().map(c=>({t:nameTok(c.c),u:Number(c.u)||0,m:c.ym,used:false}));
+  return L.filter(p=>{const t=nameTok(p.nom),u=Number(p.unites)||0;let best=null,bs=0;
+    C.forEach(c=>{if(c.used)return;let k=0;t.forEach(x=>{if(c.t.has(x))k++});if(!k)return;const close=Math.abs(c.u-u)<=Math.max(2,u*.05);const sc=(k>=2?2:0)+(close?1:0)+(c.m===m?.5:0);if((k>=2||close)&&sc>bs){bs=sc;best=c}});
+    if(best){best.used=true;return false}return true})}
+const crmExtra=m=>{if(!aslOn(m))return 0;const L=crmExtraList(m);return L===null?Math.max(0,crmUnits(m)-aslU(MYKEY,m)):L.reduce((t,p)=>t+(Number(p.unites)||0),0)};
+const myUnits=m=>aslOn(m)?aslU(MYKEY,m)+crmExtra(m):crmUnits(m);
 let BAR={JFA1:{t:"c",v:50},JFA2:{t:"u",v:2},JFA3:{t:"u",v:3},JFAC:{t:"u",v:3},FA:{t:"u",v:3.5}};
 const barOf=st=>{const b=BAR?.[st||"JFA1"];if(b===null||b===undefined||b==="")return null;if(typeof b==="number")return{t:"u",v:b};return b.v===null||b.v===undefined||b.v===""?null:{t:b.t==="c"?"c":"u",v:Number(b.v)}};
 const barTxt=st=>{const b=barOf(st);return b?`${String(b.v).replace(".",",")} € par ${b.t==="c"?"contrat démarré":"unité"}`:"barème à renseigner"};
@@ -1038,7 +1046,7 @@ function structBlock(scope){const all=scope==="all"&&isMega()||!meS(),V=all?(isM
   const roots=all?(SKIDS[""]||[]).slice().sort((a,b)=>sdown(b.id).length-sdown(a.id).length):[meS()];
   return `<div class="aslbar ${A?"ok":"ko"}"><span>${A?`ASL de ${esc(monthName(month))} · ${A.auto?"synchronisé":"importé"} le ${dmy(A.importe)}${A.fichier?` · ${esc(A.fichier)}`:""}${A.partiel?` · données partielles (${esc(A.partiel)} uniquement)`:""}`:`Pas d'ASL importé pour ${esc(monthName(month))}.${ms.length?` Dernier ASL : ${esc(monthName(ms[ms.length-1]))}.`:""}`}</span>${isSuper()?`<button class="btn ghost sm" type="button" data-goimp>Importer un ASL</button>`:""}</div>
   <div class="grid k5" style="grid-template-columns:repeat(4,minmax(0,1fr));margin:14px 0 16px">
-    <div class="w kpi"><span class="l">Unités ${all?"du cabinet":"de ma structure"}</span><span class="v">${fmt(tot)}</span><span class="f"><span class="delta eq">${all?"source ASL":`dont ${fmt(meS()?aslU(MYKEY):0)} perso`}</span></span></div>
+    <div class="w kpi"><span class="l">Unités ${all?"du cabinet":"de ma structure"}</span><span class="v">${fmt(tot)}</span><span class="f"><span class="delta eq">${all?"source ASL":`dont ${fmt(meS()?myUnits(month):0)} perso`}</span></span></div>
     <div class="w kpi"><span class="l">Contrats</span><span class="v">${n}</span><span class="f"><span class="delta eq">${V.length} personne${V.length>1?"s":""}</span></span></div>
     <div class="w kpi"><span class="l">Validé</span><span class="v">${fmt(val)}</span><span class="f"><span class="delta eq">unités</span></span></div>
     <div class="w kpi"><span class="l">En attente sur Lya</span><span class="v">${fmt(att)}</span><span class="f"><span class="delta eq">unités</span></span></div></div>
@@ -1201,11 +1209,11 @@ function personChart(t,n=6){const ms=[];for(let i=n-1;i>=0;i--)ms.push(shiftMont
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Unités par mois de ${esc(t.nom)}">${g}</svg>`}
 const teamCrm=m=>T.reduce((s,x)=>s+(Number(x.unites?.[m])||0),0);
 // Unités d'équipe = toute la structure, moi compris (comme dans l'ASL)
-const teamUnits=m=>aslOn(m)&&hasDown()?aslBranch(MYKEY,m):teamCrm(m);
+const teamUnits=m=>aslOn(m)&&hasDown()?aslBranch(MYKEY,m)+crmExtra(m):teamCrm(m);
 const teamOnly=m=>aslOn(m)&&hasDown()?aslTeam(m):teamCrm(m);
 // FA et au-dessus : le tableau de bord se lit uniquement en unités d'équipe
 const teamMode=()=>!!(MYKEY&&meS()&&hasDown()&&SST.indexOf(meS().statut)>=4);
-const totalUnits=m=>aslOn(m)&&hasDown()?((teamMode()||CFG.inclureEquipe)?aslBranch(MYKEY,m):aslU(MYKEY,m)):myUnits(m)+(CFG.inclureEquipe?teamCrm(m):0);
+const totalUnits=m=>aslOn(m)&&hasDown()?((teamMode()||CFG.inclureEquipe)?aslBranch(MYKEY,m):aslU(MYKEY,m))+crmExtra(m):myUnits(m)+(CFG.inclureEquipe?teamCrm(m):0);
 const signedCount=m=>P.filter(p=>p.statut==="signe"&&unitMonth(p)===m).length;
 const rdvCount=m=>P.filter(p=>["rdv_cale","rdv_fait","signe"].includes(p.statut)&&p.dateRdv&&ym(p.dateRdv)===m).length;
 const listes=()=>[...new Set([...BASE_LISTES,...P.map(r=>r.liste).filter(Boolean)])];
@@ -1235,9 +1243,9 @@ const addNew=()=>{if(view==="team")openTeam(null);else openContact(null,view==="
 $("addTop").onclick=addNew;$("fab").onclick=addNew;
 function goPros(k){filt=k||"";setView("pros")}
 
-let ASLC={},ASLCK=null,ASLCU=null;
+let ASLC={},ASLCK=null,ASLCU=null,ASLCOK=false;
 function watchASLC(){if(!window.WEB||!db||!MYKEY||ASLCK===MYKEY)return;ASLCK=MYKEY;if(ASLCU)try{ASLCU()}catch(e){}ASLC={};
-  ASLCU=db.collection("aslc/"+MYKEY+"/mois").onSnapshot(s=>{ASLC={};s.docs.forEach(d=>{ASLC[d.id]=d.data()});if(view==="cli")render()},()=>{})}
+  ASLCU=db.collection("aslc/"+MYKEY+"/mois").onSnapshot(s=>{ASLC={};s.docs.forEach(d=>{ASLC[d.id]=d.data()});ASLCOK=true;render()},()=>{})}
 const ETAT={v:["Validé","ok"],a:["En attente sur Lya","wait"],c:["À corriger","ko"],r:["Refusé","ko"]};
 const aslcList=()=>Object.entries(ASLC).flatMap(([m,d])=>(d.contrats||[]).map((c,i)=>({...c,ym:m,i}))).sort((a,b)=>b.ym.localeCompare(a.ym)||String(a.c).localeCompare(String(b.c),"fr"));
 const etatChip=e=>{const k=etatK(e),[l,c]=ETAT[k]||ETAT.a;return `<span class="echip ${c}">${l}</span>`};
@@ -1381,7 +1389,7 @@ function renderDash(){
     <div class="bigs"><div class="big"><span class="lb2"><i>${svgI("pros")}</i>Contacts</span><span class="n" data-count="${P.length}">${P.length}</span></div>
     <div class="big"><span class="lb2"><i>${svgI("cal")}</i>RDV calés</span><span class="n" data-count="${P.filter(p=>p.statut==="rdv_cale").length}">${P.filter(p=>p.statut==="rdv_cale").length}</span></div></div></div>
     <button type="button" class="gauge" data-go="obj" aria-label="Objectif du mois : ${fmt(tot)} unités sur ${fmt(obj)}">${ring(tot,obj)}<span class="gc"><span class="gn${fmt(tot).length>=8?" s":fmt(tot).length>=6?" m":""}" data-count="${tot}">${fmt(tot)}</span><span class="gs">/ ${fmt(obj)} unités</span><b class="gp">${obj?Math.round(tot/obj*100):0} %</b></span>
-    <span class="gl"><b>Objectif du mois</b><span>${paceTag||""}</span>${CFG.inclureEquipe&&tm?`<small>dont ${fmt(tm)} u équipe</small>`:""}</span></button></section>`;
+    <span class="gl"><b>Objectif du mois</b><span>${paceTag||""}</span>${CFG.inclureEquipe&&tm?`<small>dont ${fmt(tm)} u équipe</small>`:""}${crmExtra(month)>0?`<small>dont ${fmt(crmExtra(month))} u signées, pas encore dans l'ASL</small>`:""}</span></button></section>`;
   $("v-dash").innerHTML=`${hero}
   ${cashWidget().replace('style="margin-top:16px"','style="margin-bottom:18px"')}
   <div class="grid k4">${kpis.map(k=>`<button type="button" class="w kpi" ${k.go?`data-go="${k.go}"`:`data-filt="${k.f}"`}><span class="l">${k.l}</span><span class="v${k.u?" units":""}"><span${/^\d+$/.test(String(k.v))?` data-count="${k.v}"`:""}>${k.v}</span>${k.u?"<small> u</small>":""}</span><span class="f"><span class="dv">${k.d}${k.novs?"":`<small class="vs">vs ${monthShort(pm)}</small>`}</span>${k.s}</span></button>`).join("")}</div>
