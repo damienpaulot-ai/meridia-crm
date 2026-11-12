@@ -728,6 +728,12 @@ body.nores .navlink,body.nores .resban{display:none!important}
 .impsum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
 .impsum div{background:var(--line-2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}.impsum span{font-size:11px;color:var(--muted)}
 .impsum input{border:1px solid var(--line);border-radius:8px;padding:3px 6px;font:inherit}
+.ctw{padding:12px 14px;margin-top:12px}.ctl{display:flex;flex-direction:column;gap:6px}
+.ctr{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--panel)}.ctr.off{opacity:.55}
+.ctn{flex:1;min-width:0;display:flex;flex-direction:column}.ctn b{font-size:14px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ctn small{font-size:12px;color:var(--muted)}
+.ctr .u{font-weight:800;font-size:14px;white-space:nowrap;color:var(--ink)}
+.ctx{border:0;background:transparent;color:var(--faint);font:inherit;font-size:18px;line-height:1;cursor:pointer;padding:4px 6px;border-radius:8px}.ctx:hover{color:#b4332a;background:#fde8e6}.ctx.sure{font-size:12px;font-weight:700;color:#b4332a;background:#fde8e6}
+@media (max-width:560px){.ctr{flex-wrap:wrap}.ctn{flex-basis:100%}}
 .sphist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0}.sphist div{border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column}.sphist span{font-size:11px;color:var(--muted)}.sphist b{font-size:14px;color:var(--ink)}
 .impym{border:1px solid var(--line);border-radius:8px;padding:3px 6px;font:inherit}
 .asll{display:flex;flex-direction:column;gap:6px}.asll div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line-2);padding:6px 0;font-size:13px}.asll span{color:var(--muted)}
@@ -988,11 +994,12 @@ const unitMonth=p=>p.moisUnites||ym(signedDate(p));
 const crmUnits=m=>P.filter(p=>p.statut==="signe"&&unitMonth(p)===m).reduce((t,p)=>t+(Number(p.unites)||0),0);
 // Contrats signés dans le CRM mais pas encore remontés dans l'ASL : ils s'ajoutent aux unités ASL
 const nameTok=n=>new Set(skey(n).split("-").filter(t=>t.length>1));
-function crmExtraList(m){const L=P.filter(p=>p.statut==="signe"&&!p.annule&&unitMonth(p)===m&&p.liste!=="ASL");if(!L.length)return[];if(!window.WEB||!ASLCOK)return null;
-  const C=aslcList().map(c=>({t:nameTok(c.c),u:Number(c.u)||0,m:c.ym,used:false}));
-  return L.filter(p=>{const t=nameTok(p.nom),u=Number(p.unites)||0;let best=null,bs=0;
+function unmatchedOf(L,A,m,nm,un){const C=A.map(c=>({t:nameTok(c.c),u:Number(c.u)||0,m:c.ym,used:false}));
+  return L.filter(p=>{const t=nameTok(nm(p)),u=Number(un(p))||0;let best=null,bs=0;
     C.forEach(c=>{if(c.used)return;let k=0;t.forEach(x=>{if(c.t.has(x))k++});if(!k)return;const close=Math.abs(c.u-u)<=Math.max(2,u*.05);const sc=(k>=2?2:0)+(close?1:0)+(c.m===m?.5:0);if((k>=2||close)&&sc>bs){bs=sc;best=c}});
     if(best){best.used=true;return false}return true})}
+function crmExtraList(m){const L=P.filter(p=>p.statut==="signe"&&!p.annule&&unitMonth(p)===m&&p.liste!=="ASL");if(!L.length)return[];if(!window.WEB||!ASLCOK)return null;
+  return unmatchedOf(L,aslcList(),m,p=>p.nom,p=>p.unites)}
 const crmExtra=m=>{if(!aslOn(m))return 0;const L=crmExtraList(m);return L===null?Math.max(0,crmUnits(m)-aslU(MYKEY,m)):L.reduce((t,p)=>t+(Number(p.unites)||0),0)};
 const myUnits=m=>aslOn(m)?aslU(MYKEY,m)+crmExtra(m):crmUnits(m);
 let BAR={JFA1:{t:"c",v:50},JFA2:{t:"u",v:2},JFA3:{t:"u",v:3},JFAC:{t:"u",v:3},FA:{t:"u",v:3.5}};
@@ -1025,24 +1032,34 @@ function refreshNav(){buildNav();document.body.classList.toggle("nores",!myMods(
   if(WANT&&WANT!==view&&VV().some(x=>x[0]===WANT))setView(WANT);else if(!VV().some(x=>x[0]===view))setView("dash");else document.querySelectorAll("[data-v]").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===view))}
 const aslP=(id,m=month)=>ASLM[m]?.persons?.[id]||null;
 const aslU=(id,m=month)=>Number(aslP(id,m)?.u)||0;
-const aslBranch=(id,m=month)=>aslU(id,m)+sdown(id).reduce((s,p)=>s+aslU(p.id,m),0);
+// Contrats saisis à la main par le manager pour une personne de sa structure (fiche équipe liée par "key")
+const tFor=id=>{const p=SP(id);return TRAW.find(r=>r.key===id)||(p?TRAW.find(r=>!r.key&&stok(r.nom)===stok(p.nom)):null)||null};
+const manCts=id=>(tFor(id)?.contrats||[]).filter(x=>!x.annule);
+let ASLX={},ASLXU={};
+function watchOne(k){if(!window.WEB||!db||!k||ASLXU[k])return;ASLXU[k]=db.collection("aslc/"+k+"/mois").onSnapshot(s=>{const o={};s.docs.forEach(d=>{o[d.id]=d.data()});ASLX[k]=o;render()},()=>{ASLX[k]=null})}
+function watchASLX(){TRAW.forEach(r=>{const k=r.key||matchS(r.nom)?.id;if(k&&(r.contrats||[]).length)watchOne(k)})}
+const aslxList=id=>Object.entries(ASLX[id]||{}).flatMap(([m,d])=>(d.contrats||[]).map(c=>({...c,ym:m})));
+function manExtraList(id,m){const L=manCts(id).filter(x=>x.mu===m);if(!L.length)return[];if(!aslP(id,m))return L;if(!ASLX[id])return null;return unmatchedOf(L,aslxList(id),m,x=>x.c,x=>x.u)}
+function manExtra(id,m=month){if(!id||id===MYKEY)return 0;const L=manExtraList(id,m);if(L===null){const t=manCts(id).filter(x=>x.mu===m).reduce((a,x)=>a+(Number(x.u)||0),0);return Math.max(0,t-aslU(id,m))}return L.reduce((a,x)=>a+(Number(x.u)||0),0)}
+const persU=(id,m=month)=>aslU(id,m)+manExtra(id,m);
+const aslBranch=(id,m=month)=>persU(id,m)+sdown(id).reduce((s,p)=>s+persU(p.id,m),0);
 const aslMonths=()=>Object.keys(ASLM).sort();
 // L'ASL fait référence pour les unités dès qu'il existe pour le mois et que la personne est reliée à la structure
 const aslOn=m=>!!(ASLM[m]&&MYKEY&&SP(MYKEY));
 const aslTeam=m=>aslBranch(MYKEY,m)-aslU(MYKEY,m);
 const hasDown=()=>!!(MYKEY&&sdown(MYKEY).length);
 // --- vue Structure ---
-function spCard(p,cls=""){const dn=sdown(p.id),u=aslU(p.id),st=p.statut||"JFA1",mg=canManage(p.id);
+function spCard(p,cls=""){const dn=sdown(p.id),u=persU(p.id),st=p.statut||"JFA1",mg=canManage(p.id);
   return `<div class="oc ${cls}${p.binome?" bin":""}${p.bloque?" off":""}" data-s="${esc(SST.indexOf(st)>4?"FA":st)}" style="${jv(st)}" tabindex="0" data-sp="${esc(p.id)}">${p.verif&&mg?'<span class="tag vf">À VÉRIFIER</span>':p.binome?'<span class="tag">BINÔME</span>':""}<div class="oh"><span class="av" style="${jv(st)}">${esc(initials(p.nom))}</span><div style="min-width:0"><div class="on">${esc(p.nom)}</div><span class="os">${esc(st)}${p.uid?' · <i class="lk" title="Compte relié">●</i>':""}</span></div></div><div class="ou"><span>Unités ${esc(monthShort(month))}</span><b>${fmt(u)}</b></div>${dn.length?`<div class="ou" style="margin-top:2px"><span>Avec son équipe</span><b>${fmt(aslBranch(p.id))}</b></div>`:""}</div>`}
 function spTree(root){const kids=[...(SKIDS[root.id]||[])].sort((a,b)=>aslBranch(b.id)-aslBranch(a.id)||String(a.nom).localeCompare(String(b.nom),"fr"));
   const flat=p=>{const o=[],w=id=>[...(SKIDS[id]||[])].sort((a,b)=>aslBranch(b.id)-aslBranch(a.id)).forEach(x=>{o.push(x);w(x.id)});w(p.id);return o};
-  return `<div class="org"><div class="org-in"><div class="oc me" data-s="${esc(SST.indexOf(root.statut)>4?"FA":root.statut)}" style="${jv(root.statut)}" tabindex="0" data-sp="${esc(root.id)}"><div class="oh"><span class="av" style="${jv(root.statut)}">${esc(initials(root.nom))}</span><div><div class="on">${root.id===MYKEY?"Moi · ":""}${esc(root.nom)}</div><span class="os">${esc(root.statut||"")}</span></div></div><div class="ou" style="justify-content:center;gap:8px"><span>Unités <b>${fmt(aslU(root.id))}</b> · avec l'équipe <b>${fmt(aslBranch(root.id))}</b></span></div></div>
+  return `<div class="org"><div class="org-in"><div class="oc me" data-s="${esc(SST.indexOf(root.statut)>4?"FA":root.statut)}" style="${jv(root.statut)}" tabindex="0" data-sp="${esc(root.id)}"><div class="oh"><span class="av" style="${jv(root.statut)}">${esc(initials(root.nom))}</span><div><div class="on">${root.id===MYKEY?"Moi · ":""}${esc(root.nom)}</div><span class="os">${esc(root.statut||"")}</span></div></div><div class="ou" style="justify-content:center;gap:8px"><span>Unités <b>${fmt(persU(root.id))}</b> · avec l'équipe <b>${fmt(aslBranch(root.id))}</b></span></div></div>
     ${kids.length?`<div class="org-stem"></div><div class="org-cols">${kids.map(k=>{const f=flat(k);return `<div class="org-col">${spCard(k)}${f.length?`<div class="org-kids">${f.map(x=>spCard(x,"sub")).join("")}</div>`:""}</div>`}).join("")}</div>`:""}</div></div>`}
 const RESBAN=()=>`<a class="resban" href="ressources.html" target="_blank" rel="noopener"><span class="ico" style="--c:var(--brand);--b:var(--brand-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg></span><span class="t"><b>Espace ressources</b><small>Process de vente, objections, calculateur : la page à partager à tes recrues</small></span><span class="btn ghost sm">Ouvrir ↗</span></a>`;
 let TSCOPE="me";try{TSCOPE=localStorage.getItem("mer-tscope")||"me"}catch(e){}
 const structOn=()=>!!(MYKEY&&meS())||(isMega()&&STRUCT.length>0);
 function structBlock(scope){const all=scope==="all"&&isMega()||!meS(),V=all?(isMega()?STRUCT:visS()):[meS(),...sdown(MYKEY)],A=ASLM[month],ms=aslMonths();
-  const tot=V.reduce((s,p)=>s+aslU(p.id),0),n=V.reduce((s,p)=>s+(Number(aslP(p.id)?.n)||0),0),att=V.reduce((s,p)=>s+(Number(aslP(p.id)?.a)||0),0),val=V.reduce((s,p)=>s+(Number(aslP(p.id)?.v)||0),0);
+  const tot=V.reduce((s,p)=>s+persU(p.id),0),n=V.reduce((s,p)=>s+(Number(aslP(p.id)?.n)||0),0),att=V.reduce((s,p)=>s+(Number(aslP(p.id)?.a)||0),0),val=V.reduce((s,p)=>s+(Number(aslP(p.id)?.v)||0),0);
   const roots=all?(SKIDS[""]||[]).slice().sort((a,b)=>sdown(b.id).length-sdown(a.id).length):[meS()];
   return `<div class="aslbar ${A?"ok":"ko"}"><span>${A?`ASL de ${esc(monthName(month))} · ${A.auto?"synchronisé":"importé"} le ${dmy(A.importe)}${A.fichier?` · ${esc(A.fichier)}`:""}${A.partiel?` · données partielles (${esc(A.partiel)} uniquement)`:""}`:`Pas d'ASL importé pour ${esc(monthName(month))}.${ms.length?` Dernier ASL : ${esc(monthName(ms[ms.length-1]))}.`:""}`}</span>${isSuper()?`<button class="btn ghost sm" type="button" data-goimp>Importer un ASL</button>`:""}</div>
   <div class="grid k5" style="grid-template-columns:repeat(4,minmax(0,1fr));margin:14px 0 16px">
@@ -1055,7 +1072,7 @@ function renderStruct(){const el=$("v-struct");el.innerHTML=structOn()?structBlo
 $("v-struct").addEventListener("click",e=>{if(e.target.closest("[data-goimp]")){ACCTAB="imp";setView("acces");return}const c=e.target.closest("[data-sp]");if(c)openSP(c.dataset.sp)});
 $("v-struct").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.sp)openSP(e.target.dataset.sp)});
 function spChart(id){const hm=aslMonths().filter(m=>aslP(id,m)||sdown(id).some(x=>aslP(x.id,m)));let st=hm[0]||month,ms=[];if(st>month)st=month;for(let m=st;m<=month&&ms.length<24;m=shiftMonth(m,1))ms.push(m);if(ms.length<6){ms=[];for(let i=5;i>=0;i--)ms.push(shiftMonth(month,-i))}if(ms.length>12)ms=ms.slice(-12);const has=m=>!!ASLM[m];
-  const data=ms.map(m=>({m,me:aslU(id,m),tm:aslBranch(id,m)-aslU(id,m)}));const top=Math.ceil(Math.max(50,...data.map(d=>d.me+d.tm))*1.15/50)*50;
+  const data=ms.map(m=>({m,me:persU(id,m),tm:aslBranch(id,m)-persU(id,m)}));const top=Math.ceil(Math.max(50,...data.map(d=>d.me+d.tm))*1.15/50)*50;
   const W=460,H=170,L=40,R=6,Tp=14,B=22,pw=W-L-R,ph=H-Tp-B,n=ms.length,bw=Math.min(38,pw/n*0.5),Y=v=>Tp+ph-v/top*ph;
   let g="";for(let k=0;k<=3;k++){const v=top*k/3;g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${fmt(Math.round(v))}</text>`}
   data.forEach((d,i)=>{const cx=L+pw/n*(i+.5),x=cx-bw/2,tot=d.me+d.tm;
@@ -1072,11 +1089,16 @@ document.addEventListener("click",async e=>{
     try{for(const k of (SKIDS[p.id]||[]))await db.doc("structure/"+k.id).update({manager:p.manager||""});
       await db.doc("structure/"+p.id).update({supprime:true,supprimeLe:today()});closeSheet();toast(`${p.nom} retiré(e) de l'équipe`)}catch(err){e.target.disabled=false;showErr(msg(err))}}
 });
-function openSP(id){const p=id?SP(id):null,mg=id?canManage(id):isSuper();if(id&&!p)return;const a=p?aslP(p.id):null,dn=p?sdown(p.id):[];
+function openSP(id){const p=id?SP(id):null,mg=id?canManage(id):isSuper();if(id&&!p)return;if(p&&ctOk(p.id)&&isSuper())watchOne(p.id);const a=p?aslP(p.id):null,dn=p?sdown(p.id):[];
   const pool=visS().filter(x=>!p||(x.id!==p.id&&!dn.some(d=>d.id===x.id))).sort((x,y)=>String(x.nom).localeCompare(String(y.nom),"fr"));
   const cust=!!p?.mods;
-  const view=p?`<div class="w" style="padding:12px 14px 10px"><div class="w-h" style="padding:0 0 6px"><h3>Unités ASL</h3><span class="sub">${esc(monthName(month))} · ${fmt(aslU(p.id))} u${dn.length?` · ${fmt(aslBranch(p.id))} u avec son équipe (${dn.length})`:""}</span></div>${spChart(p.id)}<div class="legend"><span><i class="sw" style="background:var(--brand)"></i>Ses unités</span>${dn.length?`<span><i class="sw" style="background:var(--accent)"></i>Son équipe</span>`:""}<span style="color:var(--faint)">* mois sans ASL importé</span></div></div>
+  const view=p?`<div class="w" style="padding:12px 14px 10px"><div class="w-h" style="padding:0 0 6px"><h3>Unités</h3><span class="sub">${esc(monthName(month))} · ${fmt(persU(p.id))} u${manExtra(p.id)>0?` (dont ${fmt(manExtra(p.id))} saisies par toi)`:""}${dn.length?` · ${fmt(aslBranch(p.id))} u avec son équipe (${dn.length})`:""}</span></div>${spChart(p.id)}<div class="legend"><span><i class="sw" style="background:var(--brand)"></i>Ses unités</span>${dn.length?`<span><i class="sw" style="background:var(--accent)"></i>Son équipe</span>`:""}<span style="color:var(--faint)">* mois sans ASL importé</span></div></div>
     ${(()=>{const hm=aslMonths().filter(m=>aslP(p.id,m));return hm.length?`<div class="sphist"><div><span>Dans l'ASL depuis</span><b>${esc(monthName(hm[0]))}</b></div><div><span>Mois présents</span><b>${hm.length}</b></div><div><span>Total cumulé</span><b>${fmt(hm.reduce((s,m)=>s+aslU(p.id,m),0))} u</b></div></div>`:""})()}${a?`<div class="spbk"><div><b>${a.n||0}</b><span>contrats</span></div><div><b>${fmt(a.v||0)}</b><span>validé</span></div><div><b>${fmt(a.a||0)}</b><span>en attente</span></div><div><b>${fmt(a.c||0)}</b><span>à corriger</span></div><div><b>${fmt(a.r||0)}</b><span>refusé</span></div></div>`:""}
+    ${ctOk(p.id)?`<div class="w ctw" id="spCt"><div class="w-h" style="padding:0 0 6px"><h3>Ses contrats</h3><span class="sub">Ce qu'elle a signé et ce qui a démarré · tu peux compléter</span></div><div id="spCtL">${ctList(p.id)}</div>
+      <div class="ctf"><div class="sec-t" style="margin:12px 0 6px">Ajouter un contrat signé</div><div class="two"><div class="field"><label for="ctC">Client</label><input id="ctC" placeholder="Prénom Nom" autocomplete="off"></div><div class="field"><label for="ctU">Unités</label><input id="ctU" type="number" min="0" step="any" inputmode="decimal" placeholder="ex. 150"></div></div>
+      <div class="two"><div class="field"><label for="ctP">Produit</label><input id="ctP" placeholder="ex. SEP REP, mutuelle…" autocomplete="off"></div><div class="field"><label for="ctD">Signé le</label><input id="ctD" type="date" value="${today()}"></div></div>
+      <div class="two"><label class="check"><input type="checkbox" id="ctDem"> Contrat démarré</label><div class="field"><label for="ctDD">Date de démarrage</label><input id="ctDD" type="date"></div></div>
+      <p class="err" id="ctErr"></p><button class="btn sm" type="button" data-ctadd="${esc(p.id)}">Ajouter le contrat</button></div></div>`:""}
     <div class="note"><span>${p.uid?"<b>Compte relié.</b> Cette personne utilise le logiciel.":"<b>Pas encore de compte relié.</b> À sa première connexion, elle choisit son nom dans le portail."}</span></div>`:"";
   const edit=mg?`<div class="sec-t">${p?"Modifier":"Nouvelle personne"}</div>
     <div class="field"><label for="spNom">Nom</label><input id="spNom" value="${esc(p?.nom||"")}" placeholder="Prénom Nom"></div>
@@ -1097,6 +1119,25 @@ async function saveSP(c){const nom=$("spNom").value.trim();if(!nom){showErr("Ind
   if($("spBlk"))d.bloque=$("spBlk").checked;delete d.id;
   let id=c.id;if(!id){id=skey(nom)||("p-"+Date.now());if(SP(id))id+="-"+Date.now().toString(36)}
   await db.doc("structure/"+id).set(d);closeSheet();toast(c.id?"Enregistré":`${nom} ajouté(e) à la structure`)}
+const ctOk=id=>!!(id&&id!==MYKEY&&db&&(isMega()||sdown(MYKEY||"").some(x=>x.id===id)));
+function ctList(id){const L=(tFor(id)?.contrats||[]).slice().sort((a,b)=>String(b.ds||"").localeCompare(String(a.ds||""))),A=aslxList(id);
+  const out=new Set();let known=!!ASLX[id];if(known)[...new Set(L.map(x=>x.mu))].forEach(m=>(unmatchedOf(L.filter(x=>x.mu===m&&!x.annule),aslxList(id),m,x=>x.c,x=>x.u)||[]).forEach(x=>out.add(x.id)));
+  const row=x=>`<div class="ctr${x.annule?" off":""}"><div class="ctn"><b>${esc(x.c)}</b><small>${[x.p?esc(x.p):"",x.ds?"signé le "+dmy(x.ds):"","compté en "+monthShort(x.mu||ym(x.ds))].filter(Boolean).join(" · ")}${known&&!x.annule?(out.has(x.id)?' · <span class="m ko">pas encore dans l\'ASL</span>':' · <span class="m ok">dans l\'ASL</span>'):""}</small></div><span class="u">${fmt(x.u)} u</span><button type="button" class="chip-t ${x.dem?"ok":"ko"}" data-ctdem="${esc(id)}|${esc(x.id)}">${x.dem?`Démarré${x.dd?" le "+dmy(x.dd):""}`:"À démarrer"}</button><button type="button" class="ctx" data-ctdel="${esc(id)}|${esc(x.id)}" aria-label="Supprimer le contrat de ${esc(x.c)}">×</button></div>`;
+  const asl=A.filter(c=>c.ym>=shiftMonth(month,-2)).sort((a,b)=>b.ym.localeCompare(a.ym)||String(a.c).localeCompare(String(b.c),"fr"));
+  return `${L.length?`<div class="ctl">${L.map(row).join("")}</div>`:`<p class="simn">Aucun contrat saisi pour l'instant.</p>`}${asl.length?`<div class="sec-t" style="margin:12px 0 6px">Dans l'ASL</div><div class="ctl">${asl.map(c=>`<div class="ctr"><div class="ctn"><b>${esc(titleCase(c.c))}</b><small>${[c.p,c.s].filter(Boolean).map(esc).join(" · ")} · ${monthShort(c.ym)}</small></div><span class="u">${fmt(c.u)} u</span>${etatChip(c.e)}</div>`).join("")}</div>`:""}`}
+async function saveCts(id,list){const r=tFor(id),p=SP(id);const months=new Set([...(r?.contrats||[]),...list].map(x=>x.mu).filter(Boolean));const un={...(r?.unites||{})};
+  months.forEach(m=>{un[m]=trunc3(list.filter(x=>x.mu===m&&!x.annule).reduce((a,x)=>a+(Number(x.u)||0),0))});
+  if(r)await db.doc(TCOL+"/"+r.id).update({contrats:list,unites:un,key:id});else await db.collection(TCOL).add({nom:p.nom,statut:p.statut||"JFA1",dateEntree:today(),objectif:null,note:"",unites:un,contrats:list,key:id});
+  watchOne(id)}
+$("sheet").addEventListener("click",async e=>{const a=e.target.closest("[data-ctadd]"),dm=e.target.closest("[data-ctdem]"),dl=e.target.closest("[data-ctdel]");if(!a&&!dm&&!dl)return;e.preventDefault();
+  try{if(a){const id=a.dataset.ctadd,c=$("ctC").value.trim(),u=$("ctU").value.trim(),ds=$("ctD").value||today();if(!c){$("ctErr").textContent="Indique le nom du client.";$("ctC").focus();return}if(u===""){$("ctErr").textContent="Indique les unités du contrat.";$("ctU").focus();return}
+      const dem=$("ctDem").checked,x={id:Date.now().toString(36),c,u:Math.max(0,trunc3(Number(u))),p:$("ctP").value.trim()||null,ds,mu:ym(ds),dem,dd:dem?($("ctDD").value||today()):($("ctDD").value||null),annule:false};
+      a.disabled=true;await saveCts(id,[...(tFor(id)?.contrats||[]),x]);a.disabled=false;["ctC","ctU","ctP","ctDD"].forEach(k=>$(k).value="");$("ctDem").checked=false;$("ctErr").textContent="";toast(`Contrat de ${c} ajouté`);$("ctC").focus();return}
+    const [id,cid]=(dm||dl).dataset[dm?"ctdem":"ctdel"].split("|"),L=(tFor(id)?.contrats||[]).map(x=>({...x})),x=L.find(y=>y.id===cid);if(!x)return;
+    if(dm){x.dem=!x.dem;if(x.dem&&!x.dd)x.dd=today();await saveCts(id,L);toast(x.dem?`${x.c} : démarré`:`${x.c} : à démarrer`);return}
+    if(!dl.dataset.sure){dl.dataset.sure="1";dl.textContent="Sûr ?";dl.classList.add("sure");setTimeout(()=>{if(dl.isConnected){delete dl.dataset.sure;dl.textContent="×";dl.classList.remove("sure")}},3000);return}
+    await saveCts(id,L.filter(y=>y.id!==cid));toast(`Contrat de ${x.c} supprimé`)}catch(err){if(a)a.disabled=false;const el=$("ctErr");if(el)el.textContent=msg(err);else showErr(msg(err))}});
+$("sheet").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.closest(".ctf")&&e.target.matches("input")){e.preventDefault();$("sheet").querySelector("[data-ctadd]")?.click()}});
 // --- import ASL (fichier Excel) ---
 let XLSXlib=null;
 function loadXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);if(XLSXlib)return XLSXlib;XLSXlib=new Promise((ok,ko)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=()=>ok(window.XLSX);s.onerror=()=>{XLSXlib=null;ko(new Error("Impossible de charger le lecteur Excel."))};document.head.appendChild(s)});return XLSXlib}
@@ -1249,7 +1290,7 @@ function watchASLC(){if(!window.WEB||!db||!MYKEY||ASLCK===MYKEY)return;ASLCK=MYK
 const ETAT={v:["Validé","ok"],a:["En attente sur Lya","wait"],c:["À corriger","ko"],r:["Refusé","ko"]};
 const aslcList=()=>Object.entries(ASLC).flatMap(([m,d])=>(d.contrats||[]).map((c,i)=>({...c,ym:m,i}))).sort((a,b)=>b.ym.localeCompare(a.ym)||String(a.c).localeCompare(String(b.c),"fr"));
 const etatChip=e=>{const k=etatK(e),[l,c]=ETAT[k]||ETAT.a;return `<span class="echip ${c}">${l}</span>`};
-function render(){paintFoot();watchASLC();
+function render(){paintFoot();watchASLC();watchASLX();if(sheetCtx?.kind==="sp"&&$("spCtL"))$("spCtL").innerHTML=ctList(sheetCtx.id);
   {const cur=ym(today()),b=$("pastBan");if(b){b.hidden=month===cur;if(month!==cur)b.innerHTML=`<span>Tu regardes <b>${esc(monthName(month))}</b>${month>cur?" (mois à venir)":""}</span><button class="btn sm" type="button" data-backnow>Revenir à ${esc(monthName(cur))}</button>`}}
   $("mLabel").textContent=monthName(month);
   const due=dueRelances().length;document.querySelectorAll("[data-cnt]").forEach(c=>{c.hidden=!due;c.textContent=due});
@@ -1372,7 +1413,7 @@ function renderDash(){
   const later=[...P.filter(p=>p.statut==="rdv_cale"&&p.dateRdv>wk).map(p=>({p,d:p.dateRdv,k:"rdv"})),...P.filter(p=>p.statut==="relance"&&p.dateRelance>wk).map(p=>({p,d:p.dateRelance,k:"rel"}))].sort((a,b)=>a.d.localeCompare(b.d)).slice(0,4);
   // équipe
   const LBS=aslOn(month)&&hasDown();
-  const LBT=LBS?sdown(MYKEY).map(p=>({id:p.id,nom:p.nom,statut:p.statut,_sp:1,unites:{[month]:aslU(p.id)}})):T;
+  const LBT=LBS?sdown(MYKEY).map(p=>({id:p.id,nom:p.nom,statut:p.statut,_sp:1,unites:{[month]:persU(p.id)}})):T;
   const topTeam=[...LBT].sort((a,b)=>(Number(b.unites?.[month])||0)-(Number(a.unites?.[month])||0)).slice(0,5);
   const maxT=Math.max(1,...topTeam.map(x=>Number(x.unites?.[month])||0));
   // recos
@@ -1543,10 +1584,11 @@ function orgChart(){const roots=[...(KIDS[""]||[])].sort((a,b)=>branchU(b,month)
   </div></div>
   <div class="org-leg"><div><h4>Statuts</h4><div class="lg-s">${[...JFA].reverse().map(j=>`<span class="li" style="${cv(j.v)}"><i class="sw ${sw[j.k]}"></i><span><b>${j.k}</b> · ${esc(j.d)} · ${rate(j.k)}</span><b>${cnt[j.k]}</b></span>`).join("")}<span class="li" style="--c:var(--accent);--b:transparent"><i class="sw" style="box-shadow:0 0 0 2px var(--accent);border-color:#fff"></i><span>Mon binôme</span></span></div></div>
   <div><h4>Mon niveau de leadership avec chacun</h4><div class="lg-l">${LEAD.map(([k,l])=>`<span><b>${k}</b>${l}</span>`).join("")}</div></div></div></div></div>`}
+const TU=()=>T.filter(t=>!(t._raw&&((t._raw.key&&SP(t._raw.key))||matchS(t.nom))));
 function renderTeam(){
   if(structOn()){const sc=isMega()&&TSCOPE==="all"?"all":"me",rb=RESBAN();
     $("v-team").innerHTML=rb+(isMega()&&meS()?`<div style="display:flex;justify-content:flex-end;margin:0 0 4px"><div class="seg" role="group" aria-label="Périmètre"><button type="button" data-tscope="me" aria-pressed="${sc==="me"}">Ma structure</button><button type="button" data-tscope="all" aria-pressed="${sc==="all"}">Tout le cabinet</button></div></div>`:"")+structBlock(sc)
-      +(MODE==="manager"&&T.length?`<div class="w" style="margin-top:16px"><div class="w-h"><div><h3>Recrues suivies à la main</h3><div class="sub">Ta saisie manuelle, en complément de l'ASL · ${esc(monthName(month))}</div></div></div><div class="w-b">${T.map(t=>{const u=Number(t.unites?.[month])||0;return `<div class="lb" tabindex="0" data-team="${esc(t.id)}"><div class="nm"><div>${avatar(t,"av xs")}${esc(t.nom)} <span class="badge" style="${jv(t.statut)}">${esc(t.statut||"JFA1")}</span></div></div><span class="u">${fmt(u)} u</span></div>`}).join("")}</div></div>`:"");return}
+      +(MODE==="manager"&&TU().length?`<div class="w" style="margin-top:16px"><div class="w-h"><div><h3>Recrues hors structure</h3><div class="sub">Pas encore dans l'organigramme · ${esc(monthName(month))}</div></div></div><div class="w-b">${TU().map(t=>{const u=Number(t.unites?.[month])||0;return `<div class="lb" tabindex="0" data-team="${esc(t.id)}"><span class="rk"></span><div class="nm"><div>${avatar(t,"av xs")}${esc(t.nom)} <span class="badge" style="${jv(t.statut)}">${esc(t.statut||"JFA1")}</span></div></div><span class="u">${fmt(u)} u</span></div>`}).join("")}</div></div>`:"");return}
   const tm=teamUnits(month),pm=teamUnits(shiftMonth(month,-1)),six=[];for(let i=5;i>=0;i--)six.push(shiftMonth(month,-i));
   const tree=teamTree();
   const byS=Object.fromEntries(JFA.map(j=>[j.k,T.filter(t=>(t.statut||"JFA1")===j.k).length]));
