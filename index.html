@@ -1386,7 +1386,8 @@ function renderDash(){
     {l:"En attente sur Lya",v:fmt(sAsl("a")),u:1,d:'<span class="delta eq">unités</span>',s:"",go:"team",novs:1},
   ]:[
     {l:"Mes unités",v:fmt(me),u:1,d:delta(me,myUnits(pm)),s:spark(six.map(myUnits),"var(--blue)"),go:"cli"},
-    MODE==="member"&&!hasDown()?{l:"À relancer",v:dueRelances().length,d:'<span class="delta eq">aujourd\'hui</span>',s:"",f:"relance",novs:1}:{l:"Unités équipe",v:fmt(tm),u:1,d:aslOn(month)&&hasDown()?`<span class="delta eq">dont ${fmt(me)} perso</span>`:delta(tm,teamUnits(pm)),s:spark(six.map(teamUnits),"var(--blue)"),go:"team"},
+    MODE==="member"&&!hasDown()?{l:"À relancer",v:dueRelances().length,d:'<span class="delta eq">aujourd\'hui</span>',s:"",f:"relance",novs:1}:{l:"Unités équipe",v:fmt(teamOnly(month)),u:1,d:delta(teamOnly(month),teamOnly(pm)),s:spark(six.map(teamOnly),"var(--blue)"),go:"team"},
+    ...(hasDown()||(MODE==="manager"&&T.length)?[{l:"Unités totales",v:fmt(me+teamOnly(month)),u:1,d:`<span class="delta eq">moi + équipe</span>`,s:spark(six.map(m=>myUnits(m)+teamOnly(m)),"var(--blue)"),go:"obj",novs:1}]:[]),
     {l:"Contrats signés",v:signedCount(month),d:delta(signedCount(month),signedCount(pm)),s:spark(six.map(signedCount),"var(--blue)"),go:"cli"},
     {l:"RDV",v:rdvCount(month),d:delta(rdvCount(month),rdvCount(pm)),s:spark(six.map(rdvCount),"var(--blue)"),f:"rdv_cale"},
   ];
@@ -1430,10 +1431,10 @@ function renderDash(){
     <div class="bigs"><div class="big"><span class="lb2"><i>${svgI("pros")}</i>Contacts</span><span class="n" data-count="${P.length}">${P.length}</span></div>
     <div class="big"><span class="lb2"><i>${svgI("cal")}</i>RDV calés</span><span class="n" data-count="${P.filter(p=>p.statut==="rdv_cale").length}">${P.filter(p=>p.statut==="rdv_cale").length}</span></div></div></div>
     <button type="button" class="gauge" data-go="obj" aria-label="Objectif du mois : ${fmt(tot)} unités sur ${fmt(obj)}">${ring(tot,obj)}<span class="gc"><span class="gn${fmt(tot).length>=8?" s":fmt(tot).length>=6?" m":""}" data-count="${tot}">${fmt(tot)}</span><span class="gs">/ ${fmt(obj)} unités</span><b class="gp">${obj?Math.round(tot/obj*100):0} %</b></span>
-    <span class="gl"><b>Objectif du mois</b><span>${paceTag||""}</span>${CFG.inclureEquipe&&tm?`<small>dont ${fmt(tm)} u équipe</small>`:""}${crmExtra(month)>0?`<small>dont ${fmt(crmExtra(month))} u signées, pas encore dans l'ASL</small>`:""}</span></button></section>`;
+    <span class="gl"><b>Objectif du mois</b><span>${paceTag||""}</span>${CFG.inclureEquipe&&teamOnly(month)?`<small>dont ${fmt(teamOnly(month))} u équipe</small>`:""}${crmExtra(month)>0?`<small>dont ${fmt(crmExtra(month))} u signées, pas encore dans l'ASL</small>`:""}</span></button></section>`;
   $("v-dash").innerHTML=`${hero}
   ${cashWidget().replace('style="margin-top:16px"','style="margin-bottom:18px"')}
-  <div class="grid k4">${kpis.map(k=>`<button type="button" class="w kpi" ${k.go?`data-go="${k.go}"`:`data-filt="${k.f}"`}><span class="l">${k.l}</span><span class="v${k.u?" units":""}"><span${/^\d+$/.test(String(k.v))?` data-count="${k.v}"`:""}>${k.v}</span>${k.u?"<small> u</small>":""}</span><span class="f"><span class="dv">${k.d}${k.novs?"":`<small class="vs">vs ${monthShort(pm)}</small>`}</span>${k.s}</span></button>`).join("")}</div>
+  <div class="grid ${kpis.length>4?"k5":"k4"}">${kpis.map(k=>`<button type="button" class="w kpi" ${k.go?`data-go="${k.go}"`:`data-filt="${k.f}"`}><span class="l">${k.l}</span><span class="v${k.u?" units":""}"><span${/^\d+$/.test(String(k.v))?` data-count="${k.v}"`:""}>${k.v}</span>${k.u?"<small> u</small>":""}</span><span class="f"><span class="dv">${k.d}${k.novs?"":`<small class="vs">vs ${monthShort(pm)}</small>`}</span>${k.s}</span></button>`).join("")}</div>
   <div class="grid c12" style="margin-top:16px">
     <div class="w s8"><div class="w-h"><div><h3>Progression vers l'objectif</h3><div class="sub">Unités cumulées jour après jour · ${esc(monthName(month))}</div></div>${paceTag}</div>
       <div class="w-b"><div class="goal-head"><span class="sub" style="color:var(--muted);font-size:13px">${paceTxt||`${fmt(tot)} unités sur ${fmt(obj)}`}</span></div>${progressChart()}
