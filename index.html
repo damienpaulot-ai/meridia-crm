@@ -734,6 +734,48 @@ body.nores .navlink,body.nores .resban{display:none!important}
 .ctr .u{font-weight:800;font-size:14px;white-space:nowrap;color:var(--ink)}
 .ctx{border:0;background:transparent;color:var(--faint);font:inherit;font-size:18px;line-height:1;cursor:pointer;padding:4px 6px;border-radius:8px}.ctx:hover{color:#b4332a;background:#fde8e6}.ctx.sure{font-size:12px;font-weight:700;color:#b4332a;background:#fde8e6}
 @media (max-width:560px){.ctr{flex-wrap:wrap}.ctn{flex-basis:100%}}
+/* ---- Ressources (page du logiciel) ---- */
+body.resro #addTop,body.resro .fab{display:none!important}
+body[data-view="res"] .month,body[data-view="res"] #mNow,body[data-view="res"] #pastBan{display:none!important}
+.rs-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,300px);gap:20px;align-items:end;margin:4px 0 20px}
+.rs-hero h2{font-size:30px;font-weight:600;letter-spacing:-.03em;margin:0 0 6px;color:var(--ink)}
+.rs-hero p{margin:0;color:var(--muted);max-width:60ch;font-size:14px}
+.rs-prog{background:var(--panel);border-radius:var(--r-card);box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.rs-prog .r1{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted)}
+.rs-prog .r1 b{font-size:22px;font-weight:600;color:var(--ink);letter-spacing:-.02em}
+.rs-prog .bar{height:8px;border-radius:99px;background:var(--line-2);overflow:hidden}.rs-prog .bar i{display:block;height:100%;background:var(--brand);border-radius:99px}
+.rs-tools{display:flex;gap:10px;align-items:center;margin-bottom:12px}.rs-tools .search{max-width:420px}
+.rs-tools .search input{height:40px;border-radius:999px;background:var(--panel);border-color:transparent;box-shadow:var(--shadow)}
+.rs-grp{margin:22px 0 0}
+.rs-grp>h3{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;margin:0 0 12px;color:var(--ink)}
+.rs-grp>h3 .ico{width:28px;height:28px;border-radius:9px}.rs-grp>h3 small{font-size:12px;font-weight:500;color:var(--muted)}
+.rs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.rs-card{all:unset;box-sizing:border-box;cursor:pointer;background:var(--panel);border-radius:20px;box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-width:0;position:relative;border:1px solid transparent;transition:border-color .15s,transform .15s}
+.rs-card:hover{border-color:color-mix(in srgb,var(--c,var(--brand)) 35%,transparent);transform:translateY(-1px)}
+.rs-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.rs-card .t{font-weight:600;font-size:15px;line-height:1.3;color:var(--ink);padding-right:22px}
+.rs-card .d{font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45}
+.rs-card .ft{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:4px;font-size:11px;font-weight:600;color:var(--faint)}
+.rs-card .tag{color:var(--c,var(--brand));background:var(--b,var(--brand-soft));border-radius:999px;padding:2px 8px}
+.rs-card .lu{position:absolute;top:14px;right:14px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--line-2);color:transparent}
+.rs-card.read .lu{background:#e3f4e8;color:#1e8a4c}.rs-card .lu svg{width:12px;height:12px}
+.rs-card.read .t{color:var(--ink-2)}
+.rs-pin{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.rs-pin .rs-card{background:linear-gradient(160deg,var(--brand) 0%,var(--navy) 100%);color:#fff}
+.rs-pin .rs-card .t{color:#fff}.rs-pin .rs-card .d{color:rgba(255,255,255,.75)}.rs-pin .rs-card .ft{color:rgba(255,255,255,.6)}
+.rs-pin .rs-card .tag{background:rgba(255,255,255,.16);color:#fff}.rs-pin .rs-card .lu{background:rgba(255,255,255,.18)}.rs-pin .rs-card.read .lu{background:#fff;color:var(--brand)}
+.rs-empty{background:var(--panel);border-radius:var(--r-card);box-shadow:var(--shadow);padding:40px 16px;text-align:center;color:var(--muted)}
+.rs-empty b{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
+.rdoc{font-size:15px;line-height:1.65;color:var(--ink-2)}.rdoc>*{margin:0 0 12px}
+.rdoc h4{font-size:12px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10px}.rdoc h4:first-child{margin-top:0}
+.rdoc ul{padding-left:20px}.rdoc li{margin-bottom:5px}.rdoc strong{color:var(--ink)}
+.rdoc .say{background:var(--brand-soft);color:var(--ink);border-radius:14px;padding:11px 14px;position:relative}
+.rdoc .him{margin-left:22px!important;color:var(--muted);font-style:italic;padding:2px 0 2px 12px;border-left:2px solid var(--line)}
+.rdoc .cue{color:#b4600f;font-weight:600;font-size:13px;background:#fdf1e4;border-radius:10px;padding:7px 11px}
+.rd-head{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}.rd-head .tag{align-self:flex-start;font-size:11px;font-weight:600;border-radius:999px;padding:3px 10px;color:var(--c);background:var(--b)}
+.rd-head .lead{color:var(--muted);margin:0;font-size:14px}.rd-meta{font-size:12px;color:var(--faint)}
+.rd-help{font-size:12px;color:var(--muted);background:var(--bg);border-radius:12px;padding:10px 12px;line-height:1.7}.rd-help code{font-family:inherit;font-weight:700;color:var(--ink)}
+@media (max-width:760px){.rs-hero{grid-template-columns:minmax(0,1fr)}.rs-hero h2{font-size:24px}.rs-tools .search{max-width:none}}
 .sphist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0}.sphist div{border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column}.sphist span{font-size:11px;color:var(--muted)}.sphist b{font-size:14px;color:var(--ink)}
 .impym{border:1px solid var(--line);border-radius:8px;padding:3px 6px;font:inherit}
 .asll{display:flex;flex-direction:column;gap:6px}.asll div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line-2);padding:6px 0;font-size:13px}.asll span{color:var(--muted)}
@@ -891,6 +933,7 @@ body.nores .navlink,body.nores .resban{display:none!important}
       <section id="v-acces" hidden></section>
       <section id="v-team" hidden></section>
       <section id="v-obj" hidden></section>
+      <section id="v-res" hidden></section>
       <p class="err" id="foot" style="margin-top:12px"></p>
     </main>
   </div>
@@ -958,10 +1001,13 @@ const ICON={
   struct:'<circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4M5 16.5V14h14v2.5M12 11.5V14"/>',
   acces:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   simu:'<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/>',
+  res:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
   calc:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 18.5h.01M12 18.5h4"/>',
 };
 const svgI=(k)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
 const VIEWS=[["dash","Tableau de bord","Accueil"],["pros","Prospects","Prospects"],["cli","Clients","Clients"],["calc","Calculateur","Calcul"],["simu","Simulateur SEP","Simu"],["car","Simulateur carrière","Carrière"],["team","Équipe","Équipe"],["obj","Objectifs","Objectifs"],["acces","Accès & équipes","Accès"]];
+// Sur le site, les ressources sont une page du logiciel (sinon, lien vers la page Claude)
+if(window.WEB)VIEWS.splice(VIEWS.findIndex(v=>v[0]==="acces"),0,["res","Ressources","Ressources"]);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const norm=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
@@ -1138,6 +1184,63 @@ $("sheet").addEventListener("click",async e=>{const a=e.target.closest("[data-ct
     if(!dl.dataset.sure){dl.dataset.sure="1";dl.textContent="Sûr ?";dl.classList.add("sure");setTimeout(()=>{if(dl.isConnected){delete dl.dataset.sure;dl.textContent="×";dl.classList.remove("sure")}},3000);return}
     await saveCts(id,L.filter(y=>y.id!==cid));toast(`Contrat de ${x.c} supprimé`)}catch(err){if(a)a.disabled=false;const el=$("ctErr");if(el)el.textContent=msg(err);else showErr(msg(err))}});
 $("sheet").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.closest(".ctf")&&e.target.matches("input")){e.preventDefault();$("sheet").querySelector("[data-ctadd]")?.click()}});
+
+// ---------- Ressources (page du logiciel, sur le site) ----------
+let RS=[],RSOK=false,RSU=null,rsQ="",rsCat="";
+const RSCATS=[["Démarrer","#023667","#e6edf7"],["Process de vente","#2f6fe4","#e7effd"],["Objections","#c2620a","#fdf0e3"],["Produits","#0f766e","#e2f4f1"],["Outils","#6d28d9","#efe8fd"],["Repères","#1e8a4c","#e3f4e8"],["Livrets et épargne","#0e7490","#e1f3f7"],["Assurance vie","#023667","#e6edf7"],["Retraite et PER","#7c3aed","#f0e9fe"],["Prévoyance","#be123c","#fde7ec"],["Investir","#2f6fe4","#e7effd"],["Fiscalité","#a16207","#fbf1dc"]];
+const rsCol=c=>{const x=RSCATS.find(k=>k[0]===c);return x?`--c:${x[1]};--b:${x[2]}`:"--c:var(--brand);--b:var(--brand-soft)"};
+const rsOrd=c=>{const i=RSCATS.findIndex(k=>k[0]===c);return i<0?99:i};
+const RSKEY=()=>"mer-res-lu-"+(MYKEY||"moi");
+let RSLU=null;const rsLu=()=>{if(RSLU)return RSLU;try{RSLU=new Set(JSON.parse(localStorage.getItem(RSKEY())||"[]"))}catch(e){RSLU=new Set()}return RSLU};
+const rsSetLu=(id,on)=>{const L=rsLu();on?L.add(id):L.delete(id);try{localStorage.setItem(RSKEY(),JSON.stringify([...L]))}catch(e){}};
+function watchRes(){if(RSU||!db)return;RSU=db.collection("ressources").onSnapshot(s=>{RS=s.docs.map(d=>({id:d.id,...d.data()}));RSOK=true;if(view==="res")render()},e=>{RSOK=true;RS=[];if(view==="res")render()})}
+const rsSort=(a,b)=>rsOrd(a.cat)-rsOrd(b.cat)||(Number(a.ordre)||99)-(Number(b.ordre)||99)||String(a.titre).localeCompare(String(b.titre),"fr");
+const rsMatch=r=>{if(rsCat&&r.cat!==rsCat)return false;if(!rsQ)return true;const q=skey(rsQ);return [r.titre,r.desc,r.cat,r.texte].some(x=>skey(x).includes(q))};
+const rsInline=t=>esc(t).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+function rsDoc(t){const out=[];let ul=null;String(t||"").split("\n").forEach(l=>{const m=l.match(/^([#\->!<])\s?(.*)$/);const k=m?m[1]:"";const v=m?m[2]:l;
+  if(k==="-"){(ul=ul||[]).push(`<li>${rsInline(v)}</li>`);return}if(ul){out.push(`<ul>${ul.join("")}</ul>`);ul=null}
+  if(!l.trim())return;if(k==="#")out.push(`<h4>${rsInline(v)}</h4>`);else if(k===">")out.push(`<div class="say">${rsInline(v)}</div>`);else if(k==="<")out.push(`<div class="him">${rsInline(v)}</div>`);else if(k==="!")out.push(`<div class="cue">${rsInline(v)}</div>`);else out.push(`<p>${rsInline(l)}</p>`)});
+  if(ul)out.push(`<ul>${ul.join("")}</ul>`);return out.join("")}
+const rsChk='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const rsCard=r=>`<button type="button" class="rs-card${rsLu().has(r.id)?" read":""}" style="${rsCol(r.cat)}" data-res="${esc(r.id)}"><span class="lu" aria-hidden="true">${rsChk}</span><span class="t">${esc(r.titre||"Sans titre")}</span>${r.desc?`<span class="d">${esc(r.desc)}</span>`:""}<span class="ft"><span class="tag">${esc(r.cat||"Divers")}</span>${r.type==="lien"?"Lien ↗":"Fiche"}${rsLu().has(r.id)?" · lue":""}</span></button>`;
+function renderRes(){watchRes();const el=$("v-res");
+  const all=RS.slice().sort(rsSort),lu=all.filter(r=>rsLu().has(r.id)).length,pc=all.length?Math.round(lu/all.length*100):0;
+  const cats=[...new Set(all.map(r=>r.cat||"Divers"))].sort((a,b)=>rsOrd(a)-rsOrd(b)||a.localeCompare(b,"fr"));
+  const L=all.filter(rsMatch),pins=!rsQ&&!rsCat?L.filter(r=>r.epingle):[],rest=L.filter(r=>!pins.includes(r));
+  const keep=document.activeElement?.id==="rsQ";
+  el.innerHTML=`<div class="rs-hero"><div><h2>Ton kit pour démarrer</h2><p>Le process de vente, les réponses aux objections et des fiches pour comprendre chaque produit. Commence par les fiches « À lire en premier ».</p></div>
+    <div class="rs-prog"><div class="r1"><span><b>${lu}</b> / ${all.length} lues</span><span>${pc} %</span></div><div class="bar"><i style="width:${pc}%"></i></div></div></div>
+   <div class="rs-tools"><label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="rsQ" type="search" placeholder="Rechercher une fiche, une objection…" value="${esc(rsQ)}" aria-label="Rechercher dans les ressources"></label></div>
+   <div class="filters"><button type="button" class="fchip" data-rscat="" aria-pressed="${!rsCat}">Tout <b>${all.length}</b></button>${cats.map(c=>`<button type="button" class="fchip" data-rscat="${esc(c)}" aria-pressed="${rsCat===c}">${esc(c)} <b>${all.filter(r=>(r.cat||"Divers")===c).length}</b></button>`).join("")}</div>
+   ${!RSOK?`<div class="rs-empty"><b>Chargement des ressources…</b></div>`:!L.length?`<div class="rs-empty"><b>${all.length?"Aucune fiche ne correspond":"Aucune ressource pour l'instant"}</b>${all.length?"Essaie un autre mot ou une autre catégorie.":isSuper()?"Ajoute la première fiche avec « Nouvelle fiche ».":""}</div>`:
+   `${pins.length?`<section class="rs-grp"><h3>À lire en premier <small>${pins.length}</small></h3><div class="rs-pin">${pins.map(rsCard).join("")}</div></section>`:""}
+    ${[...new Set(rest.map(r=>r.cat||"Divers"))].sort((a,b)=>rsOrd(a)-rsOrd(b)).map(c=>{const g=rest.filter(r=>(r.cat||"Divers")===c);return `<section class="rs-grp"><h3><span class="ico" style="${rsCol(c)};color:var(--c);background:var(--b)">${svgI("res")}</span>${esc(c)} <small>${g.length}</small></h3><div class="rs-grid">${g.map(rsCard).join("")}</div></section>`}).join("")}`}`;
+  if(keep){const i=$("rsQ");i.focus();i.setSelectionRange(i.value.length,i.value.length)}}
+function openRes(id){const r=RS.find(x=>x.id===id);if(!r)return;if(r.type==="lien"&&r.url){window.open(r.url,"_blank","noopener");return}
+  const sib=RS.filter(x=>x.cat===r.cat&&x.type!=="lien").sort(rsSort),i=sib.findIndex(x=>x.id===id),prev=sib[i-1],next=sib[i+1],lu=rsLu().has(id);
+  openSheet(r.cat||"Ressource",`<div class="rd-head" style="${rsCol(r.cat)}"><span class="tag">${esc(r.cat||"Divers")}</span><h2 style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--ink)">${esc(r.titre||"")}</h2>${r.desc?`<p class="lead">${esc(r.desc)}</p>`:""}${r.maj?`<span class="rd-meta">Mise à jour le ${dmy(r.maj)}</span>`:""}</div><div class="rdoc">${rsDoc(r.texte)}</div>`,
+   `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-right:auto">${isSuper()?`<button type="button" class="btn ghost sm" data-resedit="${esc(id)}">Modifier</button>`:""}${prev?`<button type="button" class="btn ghost sm" data-resgo="${esc(prev.id)}">← Précédente</button>`:""}${next?`<button type="button" class="btn ghost sm" data-resgo="${esc(next.id)}">Suivante →</button>`:""}</div><button type="button" class="btn sm${lu?" ghost":""}" data-reslu="${esc(id)}">${lu?"Marquer non lue":"J'ai lu"}</button>`,{kind:"res",id});
+  [...$("sheet").elements].forEach(el=>el.disabled=false)}
+function openResEdit(id){const r=id?RS.find(x=>x.id===id):null;if(id&&!r)return;const cats=[...new Set([...RSCATS.map(c=>c[0]),...RS.map(x=>x.cat).filter(Boolean)])];
+  openSheet(r?"Modifier la fiche":"Nouvelle fiche",`<div class="field"><label for="reT">Titre</label><input id="reT" value="${esc(r?.titre||"")}" autocomplete="off"></div>
+   <div class="two"><div class="field"><label for="reC">Catégorie</label><input id="reC" list="reCL" value="${esc(r?.cat||rsCat||"")}" autocomplete="off"><datalist id="reCL">${cats.map(c=>`<option value="${esc(c)}">`).join("")}</datalist></div><div class="field"><label for="reO">Ordre dans la catégorie</label><input id="reO" type="number" min="1" value="${esc(r?.ordre??"")}"></div></div>
+   <div class="field"><label for="reD">Résumé (une ligne)</label><input id="reD" value="${esc(r?.desc||"")}" autocomplete="off"></div>
+   <div class="two"><div class="field"><label for="reY">Type</label><select id="reY"><option value="fiche"${r?.type!=="lien"?" selected":""}>Fiche</option><option value="lien"${r?.type==="lien"?" selected":""}>Lien</option></select></div><div class="field"><label for="reU">Lien (si type Lien)</label><input id="reU" type="url" value="${esc(r?.url||"")}" placeholder="https://…"></div></div>
+   <label class="check"><input type="checkbox" id="reP"${r?.epingle?" checked":""}> À lire en premier (épinglée)</label>
+   <div class="field"><label for="reX">Contenu</label><textarea id="reX" rows="14" style="min-height:260px;line-height:1.55">${esc(r?.texte||"")}</textarea></div>
+   <p class="rd-help"><code>#</code> titre de partie · <code>-</code> liste · <code>&gt;</code> phrase à dire au client · <code>&lt;</code> réponse du client · <code>!</code> indication pour toi · <code>**gras**</code></p><p class="err" id="reErr"></p>`,
+   `${r?`<button type="button" class="btn ghost sm" data-resdel="${esc(id)}" style="margin-right:auto;color:#b4332a">Supprimer</button>`:""}<button type="button" class="btn ghost" data-close>Annuler</button><button type="button" class="btn" data-ressave="${esc(id||"")}">Enregistrer</button>`,{kind:"resedit",id})}
+$("v-res").addEventListener("input",e=>{if(e.target.id==="rsQ"){rsQ=e.target.value;render()}});
+$("v-res").addEventListener("click",e=>{const c=e.target.closest("[data-rscat]");if(c){rsCat=c.dataset.rscat;render();return}const r=e.target.closest("[data-res]");if(r)openRes(r.dataset.res)});
+$("sheet").addEventListener("click",async e=>{const lu=e.target.closest("[data-reslu]"),go=e.target.closest("[data-resgo]"),ed=e.target.closest("[data-resedit]"),sv=e.target.closest("[data-ressave]"),dl=e.target.closest("[data-resdel]");
+  if(lu){const id=lu.dataset.reslu,on=!rsLu().has(id);rsSetLu(id,on);if(on){const sib=RS.filter(x=>x.cat===RS.find(y=>y.id===id)?.cat&&x.type!=="lien").sort(rsSort),i=sib.findIndex(x=>x.id===id);toast("Fiche marquée comme lue");render();if(sib[i+1])openRes(sib[i+1].id);else{closeSheet()}}else{render();openRes(id)}return}
+  if(go){openRes(go.dataset.resgo);$("sheet").scrollTop=0;return}if(ed){openResEdit(ed.dataset.resedit);return}
+  if(sv){const id=sv.dataset.ressave,t=$("reT").value.trim(),c=$("reC").value.trim();if(!t){$("reErr").textContent="Donne un titre à la fiche.";$("reT").focus();return}if(!c){$("reErr").textContent="Choisis une catégorie.";$("reC").focus();return}
+    const d={titre:t,cat:c,desc:$("reD").value.trim(),type:$("reY").value,url:$("reU").value.trim(),epingle:$("reP").checked,ordre:Number($("reO").value)||99,texte:$("reX").value,maj:today(),fichier:null};
+    sv.disabled=true;try{const nid=id||("f"+Date.now().toString(36));await db.doc("ressources/"+nid).set(d);toast(id?"Fiche enregistrée":"Fiche ajoutée");closeSheet();if(d.type!=="lien")setTimeout(()=>openRes(nid),300)}catch(err){sv.disabled=false;$("reErr").textContent=msg(err)}return}
+  if(dl){if(!dl.dataset.sure){dl.dataset.sure="1";dl.textContent="Confirmer la suppression";return}try{await db.doc("ressources/"+dl.dataset.resdel).delete();toast("Fiche supprimée");closeSheet()}catch(err){$("reErr").textContent=msg(err)}}});
+document.addEventListener("click",e=>{const a=e.target.closest("a.resban,a.navlink[href*='7e6pusiv11ZgHjYUZcrsk6'],a.navlink[href='ressources.html']");if(a&&window.WEB&&VIEWS.some(v=>v[0]==="res")){e.preventDefault();setView("res")}},true);
+if(window.WEB)document.querySelectorAll(".navlink").forEach(a=>{const h=a.getAttribute("href")||"";if(h.includes("7e6pusiv11ZgHjYUZcrsk6")||h==="ressources.html")a.remove()});
 // --- import ASL (fichier Excel) ---
 let XLSXlib=null;
 function loadXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);if(XLSXlib)return XLSXlib;XLSXlib=new Promise((ok,ko)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=()=>ok(window.XLSX);s.onerror=()=>{XLSXlib=null;ko(new Error("Impossible de charger le lecteur Excel."))};document.head.appendChild(s)});return XLSXlib}
@@ -1275,12 +1378,12 @@ function setView(v){if(v==="struct")v="team";const ok=VV().some(x=>x[0]===v);if(
   document.querySelectorAll("[data-v]").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===v));
   VIEWS.forEach(([k])=>$("v-"+k).hidden=k!==v);
   const t=VIEWS.find(x=>x[0]===v)[1];$("title").textContent=t;$("ptitle").textContent=t;
-  $("addLbl").textContent=v==="team"?"Nouvelle recrue":v==="cli"?"Nouveau client":"Nouveau contact";
+  $("addLbl").textContent=v==="team"?"Nouvelle recrue":v==="cli"?"Nouveau client":v==="res"?"Nouvelle fiche":"Nouveau contact";document.body.classList.toggle("resro",v==="res"&&!isSuper());
   render();window.scrollTo({top:0})}
 $("mPrev").onclick=()=>{month=shiftMonth(month,-1);render()};
 $("mNext").onclick=()=>{month=shiftMonth(month,1);render()};
 $("mNow").onclick=()=>{month=ym(today());render()};
-const addNew=()=>{if(view==="team")openTeam(null);else openContact(null,view==="cli"?"signe":(filt&&S[filt]?filt:"a_prospecter"))};
+const addNew=()=>{if(view==="res"){if(isSuper())openResEdit(null);return}if(view==="team")openTeam(null);else openContact(null,view==="cli"?"signe":(filt&&S[filt]?filt:"a_prospecter"))};
 $("addTop").onclick=addNew;$("fab").onclick=addNew;
 function goPros(k){filt=k||"";setView("pros")}
 
@@ -1296,7 +1399,7 @@ function render(){paintFoot();watchASLC();watchASLX();if(sheetCtx?.kind==="sp"&&
   const due=dueRelances().length;document.querySelectorAll("[data-cnt]").forEach(c=>{c.hidden=!due;c.textContent=due});
   const obj=objOf(ym(today())),tot=totalUnits(ym(today())),me=myUnits(ym(today()));
   $("goalMini").innerHTML=`<div class="row1"><span><b>${fmt(tot)}</b> / ${fmt(obj)} u</span><span>${obj?Math.round(tot/obj*100):0} %</span></div><div class="bar">${(()=>{const m1=Math.min(me,tot),pa=obj?Math.min(100,m1/obj*100):0,pb=obj?Math.min(100-pa,Math.max(0,tot-m1)/obj*100):0;return `<i style="width:${pa}%;background:var(--brand)"></i><i style="width:${pb}%;background:var(--blue)"></i>`})()}</div>`;
-  ({dash:renderDash,pros:renderPros,cli:renderCli,calc:renderCalc,simu:renderSimu,car:renderCar,team:renderTeam,obj:renderObj,struct:renderStruct,acces:renderAcces})[view]();syncAnn();
+  ({dash:renderDash,pros:renderPros,cli:renderCli,calc:renderCalc,simu:renderSimu,car:renderCar,team:renderTeam,obj:renderObj,res:renderRes,struct:renderStruct,acces:renderAcces})[view]();syncAnn();
   if(view==="dash"&&loaded&&!dashAnimated){dashAnimated=true;const el=$("v-dash");el.classList.add("anim");countUp(el);setTimeout(()=>el.classList.remove("anim"),1500)}
 }
 
@@ -1766,7 +1869,7 @@ async function recruit(){const r=sheetCtx.row;if(!r)return;
   if(T.some(t=>norm(t.nom)===norm(r.nom))){showErr(`${r.nom} est déjà dans ton équipe.`);return}
   try{await db.collection(TCOL).add({nom:r.nom,statut:"JFA1",dateEntree:today(),tel:r.tel||"",recommandation:r.recommandation||"",note:"",objectif:null,unites:{},contactId:r.id});
     closeSheet();toast(`${r.nom} rejoint ton équipe en JFA1`)}catch(err){showErr(msg(err))}}
-$("sheet").addEventListener("submit",async e=>{e.preventDefault();if(!db||!canWrite)return;const c=sheetCtx;if(c.kind==="ann")return;if(c.kind==="sp"){try{await saveSP(c)}catch(err){showErr(msg(err))}return}
+$("sheet").addEventListener("submit",async e=>{e.preventDefault();if(!db||!canWrite)return;const c=sheetCtx;if(c.kind==="ann"||c.kind==="res")return;if(c.kind==="resedit"){$("sheet").querySelector("[data-ressave]")?.click();return}if(c.kind==="sp"){try{await saveSP(c)}catch(err){showErr(msg(err))}return}
   try{
     if(c.kind==="join"){const nom=$("jNom").value.trim();if(!nom){showErr("Indique ton prénom et ton nom.");$("jNom").focus();return}const o=$("jObj").value.trim();
       await db.doc(CFGDOC).set({nom,statut:"JFA1",objectifMensuel:o===""?0:Math.max(0,Number(o)||0),objectifs:{},rejoint:today()});joining=false;closeSheet(true);toast(`Bienvenue ${nom}`);return}
