@@ -778,6 +778,9 @@ a.btn{text-decoration:none}
 .rs-pdf{border-radius:16px;overflow:hidden;background:var(--bg);border:1px solid var(--line);margin-top:6px}.rs-pdf iframe{display:block;width:100%;height:72vh;border:0}
 .rd-help{font-size:12px;color:var(--muted);background:var(--bg);border-radius:12px;padding:10px 12px;line-height:1.7}.rd-help code{font-family:inherit;font-weight:700;color:var(--ink)}
 @media (max-width:760px){.rs-hero{grid-template-columns:minmax(0,1fr)}.rs-hero h2{font-size:24px}.rs-tools .search{max-width:none}}
+.mcts #sMulti{display:flex;flex-direction:column;gap:8px}.mcts #sMulti:empty{display:none}
+.mct{display:grid;grid-template-columns:minmax(0,1fr) 110px 32px;gap:8px;align-items:center}
+.mtot{margin:2px 0 0;font-size:13px;color:var(--muted)}.mtot b{color:var(--ink)}
 .sphist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0}.sphist div{border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column}.sphist span{font-size:11px;color:var(--muted)}.sphist b{font-size:14px;color:var(--ink)}
 .impym{border:1px solid var(--line);border-radius:8px;padding:3px 6px;font:inherit}
 .asll{display:flex;flex-direction:column;gap:6px}.asll div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line-2);padding:6px 0;font-size:13px}.asll span{color:var(--muted)}
@@ -1039,6 +1042,9 @@ try{view=localStorage.getItem("mer-view")||view;if(view==="struct")view="team";W
 const objOf=m=>Number(CFG.objectifs?.[m]??CFG.objectifMensuel??1500)||0;
 const signedDate=p=>p.dateSignature||p.maj||"";
 const unitMonth=p=>p.moisUnites||ym(signedDate(p));
+// Plusieurs contrats sur un même client : contrats=[{p,u}] (le 1er = contrat principal), unites = total
+const multiC=p=>Array.isArray(p?.contrats)&&p.contrats.length>1;
+const prodTxt=p=>multiC(p)?p.contrats.map(c=>c.p||"Contrat").join(" + "):(p?.produit||"");
 const crmUnits=m=>P.filter(p=>p.statut==="signe"&&unitMonth(p)===m).reduce((t,p)=>t+(Number(p.unites)||0),0);
 // Contrats signés dans le CRM mais pas encore remontés dans l'ASL : ils s'ajoutent aux unités ASL
 const nameTok=n=>new Set(skey(n).split("-").filter(t=>t.length>1));
@@ -1046,7 +1052,7 @@ function unmatchedOf(L,A,m,nm,un){const C=A.map(c=>({t:nameTok(c.c),u:Number(c.u
   return L.filter(p=>{const t=nameTok(nm(p)),u=Number(un(p))||0;let best=null,bs=0;
     C.forEach(c=>{if(c.used)return;let k=0;t.forEach(x=>{if(c.t.has(x))k++});if(!k)return;const close=Math.abs(c.u-u)<=Math.max(2,u*.05);const sc=(k>=2?2:0)+(close?1:0)+(c.m===m?.5:0);if((k>=2||close)&&sc>bs){bs=sc;best=c}});
     if(best){best.used=true;return false}return true})}
-function crmExtraList(m){const L=P.filter(p=>p.statut==="signe"&&!p.annule&&unitMonth(p)===m&&p.liste!=="ASL");if(!L.length)return[];if(!window.WEB||!ASLCOK)return null;
+function crmExtraList(m){const L=P.filter(p=>p.statut==="signe"&&!p.annule&&unitMonth(p)===m&&p.liste!=="ASL").flatMap(p=>multiC(p)?p.contrats.map((c,i)=>({...p,unites:c.u,produit:c.p,_i:i})):[p]);if(!L.length)return[];if(!window.WEB||!ASLCOK)return null;
   return unmatchedOf(L,aslcList(),m,p=>p.nom,p=>p.unites)}
 const crmExtra=m=>{if(!aslOn(m))return 0;const L=crmExtraList(m);return L===null?Math.max(0,crmUnits(m)-aslU(MYKEY,m)):L.reduce((t,p)=>t+(Number(p.unites)||0),0)};
 const myUnits=m=>aslOn(m)?aslU(MYKEY,m)+crmExtra(m):crmUnits(m);
@@ -1185,6 +1191,8 @@ $("sheet").addEventListener("click",async e=>{const a=e.target.closest("[data-ct
     if(dm){x.dem=!x.dem;if(x.dem&&!x.dd)x.dd=today();await saveCts(id,L);toast(x.dem?`${x.c} : démarré`:`${x.c} : à démarrer`);return}
     if(!dl.dataset.sure){dl.dataset.sure="1";dl.textContent="Sûr ?";dl.classList.add("sure");setTimeout(()=>{if(dl.isConnected){delete dl.dataset.sure;dl.textContent="×";dl.classList.remove("sure")}},3000);return}
     await saveCts(id,L.filter(y=>y.id!==cid));toast(`Contrat de ${x.c} supprimé`)}catch(err){if(a)a.disabled=false;const el=$("ctErr");if(el)el.textContent=msg(err);else showErr(msg(err))}});
+$("sheet").addEventListener("click",e=>{if(e.target.closest("[data-addct]")){$("sMulti").insertAdjacentHTML("beforeend",ctRow());ctTot();$("sMulti").lastElementChild.querySelector(".mp").focus();return}const rm=e.target.closest("[data-rmct]");if(rm){rm.closest(".mct").remove();ctTot()}});
+$("sheet").addEventListener("input",e=>{if(e.target.closest("#sMulti")||e.target.id==="sUnites")ctTot()});
 $("sheet").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.closest(".ctf")&&e.target.matches("input")){e.preventDefault();$("sheet").querySelector("[data-ctadd]")?.click()}});
 
 // ---------- Ressources (page du logiciel, sur le site) ----------
@@ -1361,6 +1369,7 @@ const teamOnly=m=>aslOn(m)&&hasDown()?aslTeam(m):teamCrm(m);
 const teamMode=()=>!!(MYKEY&&meS()&&hasDown()&&SST.indexOf(meS().statut)>=4);
 const totalUnits=m=>aslOn(m)&&hasDown()?((teamMode()||CFG.inclureEquipe)?aslBranch(MYKEY,m):aslU(MYKEY,m))+crmExtra(m):myUnits(m)+(CFG.inclureEquipe?teamCrm(m):0);
 const signedCount=m=>P.filter(p=>p.statut==="signe"&&unitMonth(p)===m).length;
+const ctCount=m=>P.filter(p=>p.statut==="signe"&&unitMonth(p)===m).reduce((t,p)=>t+(multiC(p)?p.contrats.length:1),0);
 const rdvCount=m=>P.filter(p=>["rdv_cale","rdv_fait","signe"].includes(p.statut)&&p.dateRdv&&ym(p.dateRdv)===m).length;
 const listes=()=>[...new Set([...BASE_LISTES,...P.map(r=>r.liste).filter(Boolean)])];
 const dueRelances=()=>P.filter(p=>p.statut==="relance"&&(!p.dateRelance||p.dateRelance<=today()));
@@ -1493,7 +1502,7 @@ function renderDash(){
     {l:"Mes unités",v:fmt(me),u:1,d:delta(me,myUnits(pm)),s:spark(six.map(myUnits),"var(--blue)"),go:"cli"},
     MODE==="member"&&!hasDown()?{l:"À relancer",v:dueRelances().length,d:'<span class="delta eq">aujourd\'hui</span>',s:"",f:"relance",novs:1}:{l:"Unités équipe",v:fmt(teamOnly(month)),u:1,d:delta(teamOnly(month),teamOnly(pm)),s:spark(six.map(teamOnly),"var(--blue)"),go:"team"},
     ...(hasDown()||(MODE==="manager"&&T.length)?[{l:"Unités totales",v:fmt(me+teamOnly(month)),u:1,d:`<span class="delta eq">moi + équipe</span>`,s:spark(six.map(m=>myUnits(m)+teamOnly(m)),"var(--blue)"),go:"obj",novs:1}]:[]),
-    {l:"Contrats signés",v:signedCount(month),d:delta(signedCount(month),signedCount(pm)),s:spark(six.map(signedCount),"var(--blue)"),go:"cli"},
+    {l:"Contrats signés",v:ctCount(month),d:delta(ctCount(month),ctCount(pm)),s:spark(six.map(ctCount),"var(--blue)"),go:"cli"},
     {l:"RDV",v:rdvCount(month),d:delta(rdvCount(month),rdvCount(pm)),s:spark(six.map(rdvCount),"var(--blue)"),f:"rdv_cale"},
   ];
   const now=ym(today()),[y,mo]=month.split("-").map(Number),dim=new Date(y,mo,0).getDate();
@@ -1654,15 +1663,17 @@ function renderCli(){
     <div class="table"><div class="thead tra"><span>Client</span><span>Produit</span><span>État</span><span>Compté en</span><span style="text-align:right">Unités</span><span></span></div>
     ${AL.map(c=>{const inC=crmK.has(stok(c.c));return `<div class="tr tra"><div class="who"><span class="av" style="${stv("signe")}">${esc(initials(c.c))}</span><div class="n">${esc(c.c)}</div></div><div class="cell">${esc([c.p,c.s].filter(Boolean).join(" · ")||"—")}</div><div>${etatChip(c.e)}</div><div class="cell">${esc(monthShort(c.ym))}</div><div class="cell r">${fmt(c.u)}</div><div class="cell r">${inC?'<span class="okm">Dans ton CRM</span>':canWrite?`<button class="chip-t" type="button" data-asladd="${esc(c.ym)}|${c.i}">Ajouter au CRM</button>`:""}</div></div>`}).join("")}</div></div>`:"";
   $("v-cli").innerHTML=`<div class="grid k5" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px">
-    <div class="w kpi"><span class="l">Contrats · ${esc(monthName(month))}</span><span class="v">${signedCount(month)}</span><span class="f">${delta(signedCount(month),signedCount(shiftMonth(month,-1)))}${spark(six.map(signedCount),"var(--c-sign)")}</span></div>
+    <div class="w kpi"><span class="l">Contrats · ${esc(monthName(month))}</span><span class="v">${ctCount(month)}</span><span class="f">${delta(ctCount(month),ctCount(shiftMonth(month,-1)))}${spark(six.map(ctCount),"var(--c-sign)")}</span></div>
     <div class="w kpi"><span class="l">Unités du mois</span><span class="v">${fmt(crmUnits(month))}</span><span class="f">${delta(crmUnits(month),crmUnits(shiftMonth(month,-1)))}${spark(six.map(crmUnits),"var(--brand)")}</span></div>
     <div class="w kpi"><span class="l">Clients au total</span><span class="v">${cl.length} <small>· ${fmt(all)} u</small></span><span class="f"><span class="delta eq">${cl.length?fmt(all/cl.length):0} u / contrat</span></span></div>
     <div class="w kpi"><span class="l">Venus par recommandation</span><span class="v">${cl.length?Math.round(reco/cl.length*100):0} %</span><span class="f"><span class="delta eq">${reco} sur ${cl.length}</span></span></div>
   </div>
   ${cl.length?"":aslSec}<div class="table"><div class="thead"><span>Client</span><span>Étape</span><span>Signé · compté en</span><span style="text-align:right">Unités</span><span>Infos</span></div>
-  ${cl.length?cl.map(p=>`<div class="tr" tabindex="0" data-id="${esc(p.id)}"><div class="who"><span class="av" style="${stv("signe")}">${esc(initials(p.nom))}</span><div class="n">${esc(p.nom)}<small>${esc(p.liste||"")}</small></div></div><div>${stSelect(p)}</div><div class="cell hide-m">${signedDate(p)?dmy(signedDate(p)):"—"} · <b>${monthShort(unitMonth(p))}</b>${p.annule?` <span class="m ko">· annulé (unités gardées)</span>`:p.demarre?` <span class="m ok">· démarré${p.dateDebut?" le "+dmy(p.dateDebut):""}</span>`:` <span class="m ko">· ${p.dateDebut?"démarre "+dmy(p.dateDebut):"démarrage à fixer"}</span>`}${alBy[stok(p.nom)]?" "+etatChip(alBy[stok(p.nom)].e):""}</div><div class="cell r">${fmt(p.unites)}</div><div class="cell m meta-m">${[p.produit?`<b>${esc(p.produit)}</b>`:"",innerWidth<860?`compté en ${monthShort(unitMonth(p))}`:"",p.recommandation?`via ${esc(p.recommandation)}`:"",esc(p.note||"")].filter(Boolean).join(" · ")}</div></div>`).join(""):AL.length?"":'<div class="empty"><b>Pas encore de client</b>Passe un contact en « Contrat signé » ou ajoute un client.</div>'}</div>${cl.length?`<div style="height:16px"></div>`+aslSec:""}`;
+  ${cl.length?cl.map(p=>`<div class="tr" tabindex="0" data-id="${esc(p.id)}"><div class="who"><span class="av" style="${stv("signe")}">${esc(initials(p.nom))}</span><div class="n">${esc(p.nom)}<small>${esc(p.liste||"")}</small></div></div><div>${stSelect(p)}</div><div class="cell hide-m">${signedDate(p)?dmy(signedDate(p)):"—"} · <b>${monthShort(unitMonth(p))}</b>${p.annule?` <span class="m ko">· annulé (unités gardées)</span>`:p.demarre?` <span class="m ok">· démarré${p.dateDebut?" le "+dmy(p.dateDebut):""}</span>`:` <span class="m ko">· ${p.dateDebut?"démarre "+dmy(p.dateDebut):"démarrage à fixer"}</span>`}${alBy[stok(p.nom)]?" "+etatChip(alBy[stok(p.nom)].e):""}</div><div class="cell r">${fmt(p.unites)}</div><div class="cell m meta-m">${[p.produit?`<b>${esc(prodTxt(p))}</b>`:"",innerWidth<860?`compté en ${monthShort(unitMonth(p))}`:"",p.recommandation?`via ${esc(p.recommandation)}`:"",esc(p.note||"")].filter(Boolean).join(" · ")}</div></div>`).join(""):AL.length?"":'<div class="empty"><b>Pas encore de client</b>Passe un contact en « Contrat signé » ou ajoute un client.</div>'}</div>${cl.length?`<div style="height:16px"></div>`+aslSec:""}`;
 }
 const vc=$("v-cli");
+const ctRow=(c={})=>`<div class="mct"><input class="mp" list="dlProd" placeholder="Produit (ex. MMA · Actif)" value="${esc(c.p||"")}" autocomplete="off" aria-label="Produit du contrat"><input class="mu" type="number" min="0" step="any" inputmode="decimal" placeholder="Unités" value="${c.u??""}" aria-label="Unités du contrat"><button type="button" class="ctx" data-rmct aria-label="Retirer ce contrat">×</button></div>`;
+const ctTot=()=>{const box=$("sMulti");if(!box)return;const ex=[...box.querySelectorAll(".mu")].map(i=>Number(i.value)||0),m=Number($("sUnites").value)||0,t=$("sTot");if(!box.children.length){t.hidden=true;return}t.hidden=false;t.innerHTML=`Total du client : <b>${fmt(trunc3(m+ex.reduce((a,b)=>a+b,0)))} u</b> sur ${box.children.length+1} contrats`};
 const aslToPros=(c,m,o)=>({nom:c.c,statut:"signe",liste:"ASL",tel:"",recommandation:"",note:"Ajouté depuis l'ASL",unites:Number(c.u)||0,produit:[c.p,c.s].filter(Boolean).join(" · ")||null,dateSignature:m+"-01",moisUnites:m,dateDebut:null,demarre:false,statutRem:myStatut(),annule:false,dateRdv:null,dateRelance:null,maj:today(),historique:histPush({},"signe"),ordre:o});
 vc.addEventListener("click",async e=>{const aa=e.target.closest("[data-aslall]");if(aa){aa.disabled=true;const have=new Set(P.filter(p=>p.statut==="signe").map(p=>stok(p.nom)));let o=P.reduce((x,q)=>Math.max(x,q.ordre||0),0),n=0;
     try{for(const c of aslcList()){const k=stok(c.c);if(have.has(k))continue;have.add(k);await db.collection(PROS).add(aslToPros(c,c.ym,++o));n++}toast(`${n} client${n>1?"s":""} ajouté${n>1?"s":""} à ton CRM`)}catch(err){aa.disabled=false;showErr(msg(err))}return}
@@ -1802,7 +1813,8 @@ function openContact(r,defStatut,hint,pre){
   <div class="field"><label for="sNom">Nom</label><input id="sNom" required value="${esc(r?.nom)}" placeholder="Prénom Nom" autocomplete="off"></div>
   <div class="field"><span class="lab">Étape</span><div class="steps" id="sSteps" role="group" aria-label="Étape"></div></div>
   <div class="note" id="sNext" hidden></div>
-  <div id="sSign" hidden style="display:flex;flex-direction:column;gap:12px"><div class="two"><div class="field"><div class="lab-row"><label for="sUnites">Unités</label><button class="link" type="button" data-calc aria-expanded="false">Calculer</button></div><input id="sUnites" type="number" min="0" step="any" inputmode="decimal" value="${r?.unites??""}" placeholder="0"></div><div class="field"><label for="sDateSig">Signé le</label><input id="sDateSig" type="date" value="${esc(r?.dateSignature||"")}"></div></div><div id="sCalc" class="ccompact" hidden></div><div class="field"><label for="sProd">Produit</label><input id="sProd" list="dlProd" value="${esc(r?.produit||"")}" placeholder="ex. SEP · REP" autocomplete="off"><datalist id="dlProd">${CALC.map(x=>`<option value="${esc(prodLabel(x))}">`).join("")}</datalist></div><div class="two"><div class="field"><label for="sMoisU">Unités comptées en</label><input id="sMoisU" type="month" value="${esc(r?.moisUnites||(r?.dateSignature?ym(r.dateSignature):""))}"></div><div class="field"><label for="sDebut">Démarrage du contrat</label><input id="sDebut" type="date" value="${esc(r?.dateDebut||"")}"><label class="check" style="margin-top:4px"><input type="checkbox" id="sDem" ${r?.demarre?"checked":""}> Contrat démarré</label></div></div><div class="two"><div class="field"><label for="sStRem">Payé au tarif</label><select id="sStRem">${JFA.map(j=>`<option${(r?.statutRem||myStatut())===j.k?" selected":""}>${j.k}</option>`).join("")}</select></div><div class="field"><span class="lab">Annulation</span><label class="check" style="min-height:38px"><input type="checkbox" id="sAnn" ${r?.annule?"checked":""}> Annulé, unités conservées</label></div></div></div><div class="note" style="font-size:12px;color:var(--muted)">Les unités comptent dans le mois choisi dès la signature. L'argent, lui, arrive quand le contrat démarre.</div></div>
+  <div id="sSign" hidden style="display:flex;flex-direction:column;gap:12px"><div class="two"><div class="field"><div class="lab-row"><label for="sUnites">Unités</label><button class="link" type="button" data-calc aria-expanded="false">Calculer</button></div><input id="sUnites" type="number" min="0" step="any" inputmode="decimal" value="${multiC(r)?(r.contrats[0].u??""):(r?.unites??"")}" placeholder="0"></div><div class="field"><label for="sDateSig">Signé le</label><input id="sDateSig" type="date" value="${esc(r?.dateSignature||"")}"></div></div><div id="sCalc" class="ccompact" hidden></div><div class="field"><label for="sProd">Produit</label><input id="sProd" list="dlProd" value="${esc(multiC(r)?(r.contrats[0].p||""):(r?.produit||""))}" placeholder="ex. SEP · REP" autocomplete="off"><datalist id="dlProd">${CALC.map(x=>`<option value="${esc(prodLabel(x))}">`).join("")}</datalist></div>
+  <div class="field mcts"><span class="lab">Autres contrats sur ce client</span><div id="sMulti">${multiC(r)?r.contrats.slice(1).map(ctRow).join(""):""}</div><button class="link" type="button" data-addct style="align-self:flex-start">+ Ajouter un autre contrat (ex. MMA)</button><p class="mtot" id="sTot" hidden></p></div><div class="two"><div class="field"><label for="sMoisU">Unités comptées en</label><input id="sMoisU" type="month" value="${esc(r?.moisUnites||(r?.dateSignature?ym(r.dateSignature):""))}"></div><div class="field"><label for="sDebut">Démarrage du contrat</label><input id="sDebut" type="date" value="${esc(r?.dateDebut||"")}"><label class="check" style="margin-top:4px"><input type="checkbox" id="sDem" ${r?.demarre?"checked":""}> Contrat démarré</label></div></div><div class="two"><div class="field"><label for="sStRem">Payé au tarif</label><select id="sStRem">${JFA.map(j=>`<option${(r?.statutRem||myStatut())===j.k?" selected":""}>${j.k}</option>`).join("")}</select></div><div class="field"><span class="lab">Annulation</span><label class="check" style="min-height:38px"><input type="checkbox" id="sAnn" ${r?.annule?"checked":""}> Annulé, unités conservées</label></div></div></div><div class="note" style="font-size:12px;color:var(--muted)">Les unités comptent dans le mois choisi dès la signature. L'argent, lui, arrive quand le contrat démarre.</div></div>
   <div class="field" id="sRdv" hidden><label for="sDateRdv">Date du RDV</label><div class="inline"><input id="sDateRdv" type="date" value="${esc(r?.dateRdv||"")}"><button class="btn ghost sm" type="button" data-quick="sDateRdv:1">Demain</button><button class="btn ghost sm" type="button" data-quick="sDateRdv:7">+7 j</button></div></div>
   <div class="field" id="sRel" hidden><label for="sDateRel">Relancer le</label><div class="inline"><input id="sDateRel" type="date" value="${esc(r?.dateRelance||"")}"><button class="btn ghost sm" type="button" data-quick="sDateRel:1">Demain</button><button class="btn ghost sm" type="button" data-quick="sDateRel:3">+3 j</button><button class="btn ghost sm" type="button" data-quick="sDateRel:7">+7 j</button></div></div>
   <div class="sec-t">Coordonnées</div>
@@ -1817,6 +1829,7 @@ function openContact(r,defStatut,hint,pre){
   `<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="submit">Enregistrer</button>`,
   {kind:"contact",id:r?.id||null,path:r?PROS+"/"+r.id:null,statut:pre?"signe":(r?.statut||defStatut||"a_prospecter"),row:r});
   paintSteps();
+  ctTot();
   if(pre){$("sUnites").value=pre.unites;$("sProd").value=pre.produit;setTimeout(()=>(r?$("sDateSig"):$("sNom")).focus(),80);return}
   if(hint&&!$("sSign").hidden)setTimeout(()=>$("sUnites").focus(),80);else if(!r)setTimeout(()=>$("sNom").focus(),80);
 }
@@ -1829,7 +1842,7 @@ function openJoin(){if(joining)return;joining=true;
 function openMember(uid){const mm=M.find(x=>x.id===uid);if(!mm)return;const L=MP[uid]||[];
   const order=["relance","rdv_cale","rdv_fait","signe","prospecte","a_prospecter","refuse","valide"];
   const stat=(l,v)=>`<div class="w kpi" style="cursor:default;padding:12px"><span class="l">${l}</span><span class="v" style="font-size:22px">${v}</span></div>`;
-  const info=(p,k)=>[k==="signe"&&p.unites!=null?`${fmt(p.unites)} u · ${monthShort(unitMonth(p))}`:"",p.produit&&k==="signe"?esc(p.produit):"",["rdv_cale","rdv_fait"].includes(k)&&p.dateRdv?"RDV "+dmy(p.dateRdv):"",k==="relance"&&p.dateRelance?"relance "+rel(p.dateRelance):"",p.recommandation?"via "+esc(p.recommandation):"",esc(p.tel||"")].filter(Boolean).join(" · ");
+  const info=(p,k)=>[k==="signe"&&p.unites!=null?`${fmt(p.unites)} u · ${monthShort(unitMonth(p))}`:"",(p.produit||multiC(p))&&k==="signe"?esc(prodTxt(p))+(multiC(p)?` (${p.contrats.length} contrats)`:""):"",["rdv_cale","rdv_fait"].includes(k)&&p.dateRdv?"RDV "+dmy(p.dateRdv):"",k==="relance"&&p.dateRelance?"relance "+rel(p.dateRelance):"",p.recommandation?"via "+esc(p.recommandation):"",esc(p.tel||"")].filter(Boolean).join(" · ");
   openSheet(mm.nom||"Collaborateur",`<div class="two">${stat("Unités · "+esc(monthName(month)),fmt(unitMap(L)[month]||0))}${stat("Contrats signés",L.filter(p=>p.statut==="signe").length)}</div>
   <div class="two">${stat("RDV calés",L.filter(p=>p.statut==="rdv_cale").length)}${stat("Contacts",L.length)}</div>
   ${order.map(k=>{const rs=L.filter(p=>p.statut===k).sort((a,b)=>String(a.nom).localeCompare(String(b.nom),"fr"));return rs.length?`<div class="sec-t">${esc(S[k].l)} · ${rs.length}</div><div class="items">${rs.map(p=>`<div class="it" style="cursor:default"><span class="av" style="${stv(k)}">${esc(initials(p.nom))}</span><span class="t">${esc(p.nom)}<small>${info(p,k)}</small></span></div>`).join("")}</div>`:""}).join("")||'<div class="none">Pas encore de contact.</div>'}`,
@@ -1878,8 +1891,10 @@ $("sheet").addEventListener("submit",async e=>{e.preventDefault();if(!db||!canWr
     if(c.kind==="contact"){const nom=$("sNom").value.trim();if(!nom){showErr("Indique au moins un nom.");$("sNom").focus();return}
       const u=$("sUnites").value.trim();
       if(c.statut==="signe"&&u===""){showErr("Indique les unités du contrat signé.");$("sUnites").focus();return}
+      const ext=[...$("sheet").querySelectorAll("#sMulti .mct")].map(x=>({p:x.querySelector(".mp").value.trim()||null,u:x.querySelector(".mu").value.trim()})).filter(x=>x.u!=="").map(x=>({p:x.p,u:Math.max(0,r1(x.u))}));
+      const cts=ext.length&&u!==""?[{p:$("sProd").value.trim()||null,u:Math.max(0,r1(u))},...ext]:null;
       const d={nom,statut:c.statut,liste:$("sListe").value.trim(),tel:$("sTel").value.trim(),recommandation:$("sReco").value.trim(),note:$("sNote").value.trim(),
-        unites:u===""?null:Math.max(0,r1(u)),produit:$("sProd").value.trim()||null,
+        unites:u===""?null:(cts?trunc3(cts.reduce((a,x)=>a+x.u,0)):Math.max(0,r1(u))),produit:$("sProd").value.trim()||null,contrats:cts,
         dateSignature:c.statut==="signe"?($("sDateSig").value||today()):(c.row?.dateSignature||null),
         moisUnites:c.statut==="signe"?($("sMoisU").value||ym($("sDateSig").value||today())):(c.row?.moisUnites||null),
         dateDebut:$("sDebut").value||($("sDem").checked&&c.statut==="signe"?today():null),demarre:c.statut==="signe"&&$("sDem").checked,statutRem:c.statut==="signe"?$("sStRem").value:(c.row?.statutRem||null),annule:c.statut==="signe"&&$("sAnn").checked,
