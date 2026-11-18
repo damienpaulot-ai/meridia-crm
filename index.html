@@ -786,6 +786,23 @@ a.btn{text-decoration:none}
 .cbars .cb[data-cashm]{cursor:pointer;border-radius:8px}.cbars .cb[data-cashm]:hover i{filter:brightness(1.15)}.cbars .cb[data-cashm]:focus-visible{outline:2px solid var(--brand)}
 .cash-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.cash-sum>div{background:var(--bg);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column}.cash-sum .l{font-size:12px;color:var(--muted)}.cash-sum b{font-size:20px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .cash-row{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--panel)}.cash-row:hover{border-color:var(--brand)}.cash-row .eur{color:var(--c-sign);min-width:64px;text-align:right}
+.lb-off summary{cursor:pointer;font-size:13px;color:var(--muted);padding:6px 2px}
+.org-hint{margin:0 0 8px;font-size:12px;color:var(--muted)}
+.oc[draggable="true"]{cursor:grab}.oc.dragging{opacity:.45}
+body.dnd .oc:not(.dragging){transition:box-shadow .12s,border-color .12s}
+.oc.drop-ok{border-color:var(--brand)!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 22%,transparent)!important;transform:scale(1.03)}
+/* classement : podium */
+.pod{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin:6px 0 4px}
+.pod-c{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-width:0}
+.pod-c .av{width:46px;height:46px;font-size:15px}.pod-c.p1 .av{width:58px;height:58px;font-size:18px;box-shadow:0 0 0 3px #e8b931}
+.pod-c .nm{font-weight:600;font-size:13px;color:var(--ink);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod-c .uu{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}.pod-c .uu b{color:var(--ink);font-size:14px}
+.pod-c .step{width:100%;border-radius:14px 14px 6px 6px;display:grid;place-items:center;font-size:22px;font-weight:800;color:#fff}
+.pod-c.p1 .step{height:96px;background:linear-gradient(180deg,#e8b931,#c9971a)}.pod-c.p2 .step{height:70px;background:linear-gradient(180deg,#aeb6c2,#8a94a3)}.pod-c.p3 .step{height:52px;background:linear-gradient(180deg,#d39466,#b26f43)}
+.pod-c:hover .nm{color:var(--brand)}.pod-c:focus-visible{outline:2px solid var(--brand);outline-offset:4px;border-radius:12px}
+.rk-row{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px}.rk-row:hover{background:var(--hover)}
+.rk-row .rk{width:24px;text-align:center;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums}.rk-row .nm{flex:1;min-width:0;display:flex;flex-direction:column}.rk-row .nm b{font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rk-row .nm small{color:var(--muted);font-size:12px}
+.rk-row .u{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .sphist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0}.sphist div{border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column}.sphist span{font-size:11px;color:var(--muted)}.sphist b{font-size:14px;color:var(--ink)}
 .impym{border:1px solid var(--line);border-radius:8px;padding:3px 6px;font:inherit}
 .asll{display:flex;flex-direction:column;gap:6px}.asll div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line-2);padding:6px 0;font-size:13px}.asll span{color:var(--muted)}
@@ -1109,11 +1126,20 @@ const aslTeam=m=>aslBranch(MYKEY,m)-aslU(MYKEY,m);
 const hasDown=()=>!!(MYKEY&&sdown(MYKEY).length);
 // --- vue Structure ---
 function spCard(p,cls=""){const dn=sdown(p.id),u=persU(p.id),st=p.statut||"JFA1",mg=canManage(p.id);
-  return `<div class="oc ${cls}${p.binome?" bin":""}${p.bloque?" off":""}" data-s="${esc(SST.indexOf(st)>4?"FA":st)}" style="${jv(st)}" tabindex="0" data-sp="${esc(p.id)}">${p.verif&&mg?'<span class="tag vf">À VÉRIFIER</span>':p.binome?'<span class="tag">BINÔME</span>':""}<div class="oh"><span class="av" style="${jv(st)}">${esc(initials(p.nom))}</span><div style="min-width:0"><div class="on">${esc(p.nom)}</div><span class="os">${esc(st)}${p.uid?' · <i class="lk" title="Compte relié">●</i>':""}</span></div></div><div class="ou"><span>Unités ${esc(monthShort(month))}</span><b>${fmt(u)}</b></div>${dn.length?`<div class="ou" style="margin-top:2px"><span>Avec son équipe</span><b>${fmt(aslBranch(p.id))}</b></div>`:""}</div>`}
+  return `<div class="oc ${cls}${p.binome?" bin":""}${p.bloque?" off":""}" data-s="${esc(SST.indexOf(st)>4?"FA":st)}" style="${jv(st)}" tabindex="0" data-sp="${esc(p.id)}"${dragOk(p.id)?' draggable="true"':""}>${p.verif&&mg?'<span class="tag vf">À VÉRIFIER</span>':p.binome?'<span class="tag">BINÔME</span>':""}<div class="oh"><span class="av" style="${jv(st)}">${esc(initials(p.nom))}</span><div style="min-width:0"><div class="on">${esc(p.nom)}</div><span class="os">${esc(st)}${p.uid?' · <i class="lk" title="Compte relié">●</i>':""}</span></div></div><div class="ou"><span>Unités ${esc(monthShort(month))}</span><b>${fmt(u)}</b></div>${dn.length?`<div class="ou" style="margin-top:2px"><span>Avec son équipe</span><b>${fmt(aslBranch(p.id))}</b></div>`:""}</div>`}
 function spTree(root){const kids=[...(SKIDS[root.id]||[])].sort((a,b)=>aslBranch(b.id)-aslBranch(a.id)||String(a.nom).localeCompare(String(b.nom),"fr"));
   const flat=p=>{const o=[],w=id=>[...(SKIDS[id]||[])].sort((a,b)=>aslBranch(b.id)-aslBranch(a.id)).forEach(x=>{o.push(x);w(x.id)});w(p.id);return o};
-  return `<div class="org"><div class="org-in"><div class="oc me" data-s="${esc(SST.indexOf(root.statut)>4?"FA":root.statut)}" style="${jv(root.statut)}" tabindex="0" data-sp="${esc(root.id)}"><div class="oh"><span class="av" style="${jv(root.statut)}">${esc(initials(root.nom))}</span><div><div class="on">${root.id===MYKEY?"Moi · ":""}${esc(root.nom)}</div><span class="os">${esc(root.statut||"")}</span></div></div><div class="ou" style="justify-content:center;gap:8px"><span>Unités <b>${fmt(persU(root.id))}</b> · avec l'équipe <b>${fmt(aslBranch(root.id))}</b></span></div></div>
+  return `${dragOk(null)?`<p class="org-hint">Astuce : fais glisser une carte sur une autre pour la changer d'équipe.</p>`:""}<div class="org"><div class="org-in"><div class="oc me" data-s="${esc(SST.indexOf(root.statut)>4?"FA":root.statut)}" style="${jv(root.statut)}" tabindex="0" data-sp="${esc(root.id)}"><div class="oh"><span class="av" style="${jv(root.statut)}">${esc(initials(root.nom))}</span><div><div class="on">${root.id===MYKEY?"Moi · ":""}${esc(root.nom)}</div><span class="os">${esc(root.statut||"")}</span></div></div><div class="ou" style="justify-content:center;gap:8px"><span>Unités <b>${fmt(persU(root.id))}</b> · avec l'équipe <b>${fmt(aslBranch(root.id))}</b></span></div></div>
     ${kids.length?`<div class="org-stem"></div><div class="org-cols">${kids.map(k=>{const f=flat(k);return `<div class="org-col">${spCard(k)}${f.length?`<div class="org-kids">${f.map(x=>spCard(x,"sub")).join("")}</div>`:""}</div>`}).join("")}</div>`:""}</div></div>`}
+// Glisser-déposer dans l'organigramme : change le manager d'une personne (super admins)
+const dragOk=id=>!!(db&&isSuper()&&(id===null||(id!==MYKEY&&canManage(id))));
+let DRAGID=null;
+const dropOk=(id,to)=>!!(id&&to&&id!==to&&SP(to)&&SP(id)?.manager!==to&&!sdown(id).some(x=>x.id===to)&&(isMega()||to===MYKEY||canManage(to)));
+document.addEventListener("dragstart",e=>{const c=e.target.closest?.(".oc[draggable='true']");if(!c)return;DRAGID=c.dataset.sp;e.dataTransfer.effectAllowed="move";try{e.dataTransfer.setData("text/plain",DRAGID)}catch(x){}c.classList.add("dragging");document.body.classList.add("dnd")});
+document.addEventListener("dragend",()=>{DRAGID=null;document.body.classList.remove("dnd");document.querySelectorAll(".oc.dragging,.oc.drop-ok").forEach(x=>x.classList.remove("dragging","drop-ok"))});
+document.addEventListener("dragover",e=>{if(!DRAGID)return;const t=e.target.closest?.(".oc[data-sp]");document.querySelectorAll(".oc.drop-ok").forEach(x=>{if(x!==t)x.classList.remove("drop-ok")});if(t&&dropOk(DRAGID,t.dataset.sp)){e.preventDefault();e.dataTransfer.dropEffect="move";t.classList.add("drop-ok")}});
+document.addEventListener("drop",async e=>{if(!DRAGID)return;const t=e.target.closest?.(".oc[data-sp]");const id=DRAGID;DRAGID=null;if(!t||!dropOk(id,t.dataset.sp))return;e.preventDefault();const to=t.dataset.sp,prev=SP(id)?.manager??null;
+  try{await db.doc("structure/"+id).update({manager:to,verif:false});toast(`${SP(id)?.nom||"Carte"} passe dans l'équipe de ${SP(to)?.nom||""}`,async()=>{try{await db.doc("structure/"+id).update({manager:prev})}catch(x){fail(x)}})}catch(x){fail(x)}});
 const RESBAN=()=>`<a class="resban" href="ressources.html" target="_blank" rel="noopener"><span class="ico" style="--c:var(--brand);--b:var(--brand-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg></span><span class="t"><b>Espace ressources</b><small>Process de vente, objections, calculateur : la page à partager à tes recrues</small></span><span class="btn ghost sm">Ouvrir ↗</span></a>`;
 let TSCOPE="me";try{TSCOPE=localStorage.getItem("mer-tscope")||"me"}catch(e){}
 const structOn=()=>!!(MYKEY&&meS())||(isMega()&&STRUCT.length>0);
@@ -1492,6 +1518,18 @@ function cashWidget(){const st=myStatut(),pend=pendingStart(),now=month;
     return `<div class="it" data-open="${esc(p.id)}"><span class="t">${esc(p.nom)}<small>${fmt(p.unites)} u · ${pay(p)} · ${esc(remSt(p))}</small></span>${w}${canWrite?`<button class="btn ghost sm" type="button" data-start="${esc(p.id)}">Démarré</button>`:""}</div>`}).join("")}</div>${pend.length>6?`<button class="link" type="button" data-cashp>+ ${pend.length-6} autres</button>`:""}`:`<div class="none">Aucun contrat en attente de démarrage.</div>`}</div></div></div>`}
 $("sheet").addEventListener("click",e=>{const r=e.target.closest(".cash-row[data-open]");if(r){e.preventDefault();openContact(P.find(p=>p.id===r.dataset.open))}});
 $("v-dash").addEventListener("keydown",e=>{const b=e.target.closest(".cb[data-cashm]");if(b&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openCash("m",b.dataset.cashm)}});
+// Classement complet : podium des 3 premiers puis la liste
+function openLB(){const LBS=aslOn(month)&&hasDown();const L=(LBS?sdown(MYKEY).map(p=>({id:p.id,nom:p.nom,statut:p.statut,_sp:1,u:persU(p.id),m:SP(p.manager)?.nom||""})):T.map(t=>({...t,u:Number(t.unites?.[month])||0,m:""}))).sort((a,b)=>b.u-a.u||String(a.nom).localeCompare(String(b.nom),"fr"));
+  const on=L.filter(x=>x.u>0),off=L.filter(x=>!(x.u>0)),top=on.slice(0,3),rest=on.slice(3),tot=on.reduce((t,x)=>t+x.u,0);
+  const at=x=>`${x._sp?"data-lbsp":"data-lbteam"}="${esc(x.id)}"`;
+  const pc=(x,k)=>x?`<button type="button" class="pod-c p${k}" ${at(x)}>${avatar(x,"av")}<span class="nm">${esc(x.nom)}</span><span class="uu"><b>${fmt(x.u)}</b> u</span><span class="step">${k}</span></button>`:`<div></div>`;
+  const row=(x,i)=>`<button type="button" class="rk-row" ${at(x)}><span class="rk">${i}</span>${avatar(x,"av xs")}<span class="nm"><b>${esc(x.nom)}</b><small>${esc(x.statut||"JFA1")}${x.m?" · équipe "+esc(x.m):""}</small></span><span class="u">${fmt(x.u)} u</span></button>`;
+  openSheet(`Classement · ${monthName(month)}`,`<p class="sub" style="margin:0;color:var(--muted)">${on.length} conseiller${on.length>1?"s":""} avec des unités · ${fmt(trunc3(tot))} u au total${LBS?" · source ASL":""}</p>
+    ${top.length?`<div class="pod">${pc(top[1],2)}${pc(top[0],1)}${pc(top[2],3)}</div>`:`<p class="simn">Personne n'a encore d'unités ce mois-ci.</p>`}
+    ${rest.length?`<div class="ctl" style="gap:2px">${rest.map((x,i)=>row(x,i+4)).join("")}</div>`:""}
+    ${off.length?`<details class="lb-off"><summary>${off.length} sans unités ce mois-ci</summary><div class="ctl" style="gap:2px;margin-top:6px">${off.map(x=>row(x,"–")).join("")}</div></details>`:""}`,
+   `<button type="button" class="btn" data-close>Fermer</button>`,{kind:"lb"});[...$("sheet").elements].forEach(el=>el.disabled=false)}
+$("sheet").addEventListener("click",e=>{const a=e.target.closest("[data-lbsp]"),b=e.target.closest("[data-lbteam]");if(a){e.preventDefault();openSP(a.dataset.lbsp)}else if(b){e.preventDefault();openTeam(T.find(t=>t.id===b.dataset.lbteam))}});
 // Détail des contrats derrière les montants de « Mon argent »
 function openCash(kind,m){const L=kind==="m"?startedList(m).slice().sort((a,b)=>String(a.dateDebut||"").localeCompare(String(b.dateDebut||""))):pendingStart();const tot=sumPay(L);
   const pay=p=>{const v=payOf(p);return v===null?"barème ?":eurN(v)};
@@ -1579,7 +1617,7 @@ function renderDash(){
       <div class="w-b"><div class="funnel">${fs.map(([l,n,c,p])=>`<div class="fs" style="${cv(c)}"><span>${l}</span><div class="fbar"><i style="width:${Math.max(7,n/base*100)}%">${fmt(n)}</i></div><span class="pct">${p==null?"":Math.round(p*100)+" %"}</span></div>`).join("")}</div></div></div>
     <div class="w s6"><div class="w-h"><div><h3>6 derniers mois</h3><div class="sub">Unités moi + équipe face à l'objectif</div></div><button class="link" type="button" data-go="obj">Détail</button></div>
       <div class="w-b">${monthsChart(6,200)}<div class="legend"><span><i class="sw" style="background:var(--brand)"></i>Moi</span><span><i class="sw" style="background:var(--accent)"></i>Équipe</span><span><i class="sw line" style="background:var(--c-ref)"></i>Objectif</span></div></div></div>
-    <div class="w s6"><div class="w-h"><div><h3>${LBT.length?"Classement équipe":"Meilleurs recommandeurs"}</h3><div class="sub">${LBT.length?esc(monthName(month))+(LBS?" · ASL":""):"Contacts apportés par recommandation"}</div></div><button class="link" type="button" data-go="${LBT.length?"team":"pros"}">Voir</button></div>
+    <div class="w s6"><div class="w-h"><div><h3>${LBT.length?"Classement équipe":"Meilleurs recommandeurs"}</h3><div class="sub">${LBT.length?esc(monthName(month))+(LBS?" · ASL":""):"Contacts apportés par recommandation"}</div></div>${LBT.length?`<button class="link" type="button" data-lb>Voir le classement</button>`:`<button class="link" type="button" data-go="pros">Voir</button>`}</div>
       <div class="w-b">${LBT.length?topTeam.map((x,i)=>{const u=Number(x.unites?.[month])||0;return `<div class="lb" tabindex="0" ${x._sp?"data-sp":"data-team"}="${esc(x.id)}"><span class="rk">${i+1}</span><div class="nm"><div>${avatar(x,"av xs")}${esc(x.nom)} <span class="badge" style="${jv(x.statut)}">${esc(x.statut||"JFA1")}</span></div><div class="bar"><i style="width:${u/maxT*100}%;background:var(--blue)"></i></div></div><span class="u">${fmt(u)} u</span></div>`}).join(""):
         recs.length?recs.map((x,i)=>`<div class="lb"><span class="rk">${i+1}</span><div class="nm"><div>${esc(x.n)}</div><div class="bar"><i style="width:${x.c/recs[0].c*100}%;background:var(--blue)"></i></div></div><span class="u">${x.c} reco${x.c>1?"s":""}</span></div>`).join(""):'<div class="none">Ajoute tes recrues dans Équipe, ou note qui t\'a recommandé chaque contact.</div>'}</div></div>
     <div class="w s12" style="grid-column:span 12"><div class="w-h"><div><h3>Activité récente</h3><div class="sub">Derniers changements d'étape</div></div></div>
@@ -1591,6 +1629,7 @@ $("v-dash").addEventListener("click",e=>{
   const stb=e.target.closest("[data-start]");if(stb){markStarted(P.find(p=>p.id===stb.dataset.start));return}
   const cm=e.target.closest("[data-cashm]");if(cm){openCash("m",cm.dataset.cashm);return}if(e.target.closest("[data-cashp]")){openCash("p");return}
   const o=e.target.closest("[data-open]");if(o)return openContact(P.find(p=>p.id===o.dataset.open));
+  if(e.target.closest("[data-lb]"))return openLB();
   const sp=e.target.closest("[data-sp]");if(sp)return openSP(sp.dataset.sp);
   const t=e.target.closest("[data-team]");if(t)return openTeam(T.find(x=>x.id===t.dataset.team));
   const g=e.target.closest("[data-go]");if(g)return setView(g.dataset.go);
@@ -1902,7 +1941,7 @@ async function recruit(){const r=sheetCtx.row;if(!r)return;
   if(T.some(t=>norm(t.nom)===norm(r.nom))){showErr(`${r.nom} est déjà dans ton équipe.`);return}
   try{await db.collection(TCOL).add({nom:r.nom,statut:"JFA1",dateEntree:today(),tel:r.tel||"",recommandation:r.recommandation||"",note:"",objectif:null,unites:{},contactId:r.id});
     closeSheet();toast(`${r.nom} rejoint ton équipe en JFA1`)}catch(err){showErr(msg(err))}}
-$("sheet").addEventListener("submit",async e=>{e.preventDefault();if(!db||!canWrite)return;const c=sheetCtx;if(c.kind==="ann"||c.kind==="res")return;if(c.kind==="resedit"){$("sheet").querySelector("[data-ressave]")?.click();return}if(c.kind==="sp"){try{await saveSP(c)}catch(err){showErr(msg(err))}return}
+$("sheet").addEventListener("submit",async e=>{e.preventDefault();if(!db||!canWrite)return;const c=sheetCtx;if(["ann","res","lb","cash"].includes(c.kind))return;if(c.kind==="resedit"){$("sheet").querySelector("[data-ressave]")?.click();return}if(c.kind==="sp"){try{await saveSP(c)}catch(err){showErr(msg(err))}return}
   try{
     if(c.kind==="join"){const nom=$("jNom").value.trim();if(!nom){showErr("Indique ton prénom et ton nom.");$("jNom").focus();return}const o=$("jObj").value.trim();
       await db.doc(CFGDOC).set({nom,statut:"JFA1",objectifMensuel:o===""?0:Math.max(0,Number(o)||0),objectifs:{},rejoint:today()});joining=false;closeSheet(true);toast(`Bienvenue ${nom}`);return}
