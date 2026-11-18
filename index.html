@@ -709,7 +709,7 @@ body.portal-on .app,body.portal-on .tabbar,body.portal-on .fab{visibility:hidden
 body.nores .navlink,body.nores .resban{display:none!important}
 .aslbar{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:16px;padding:10px 14px 10px 16px;font-size:13px;font-weight:600}
 .aslbar.ok{background:var(--b-sign);color:var(--c-sign)}.aslbar.ko{background:var(--b-ref);color:var(--c-ref)}
-.oc .tag.vf{background:#d97706}
+.oc .tag.vf{background:#d97706}.oc .tag.gone{background:#6b7280}
 .oc .lk{font-style:normal;color:var(--c-sign);font-size:9px}
 .oc.off{opacity:.5}
 .spbk{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0}
@@ -1099,6 +1099,9 @@ let WANT=null,STRUCTALL=[],STRUCT=[],SKIDS={},ASLM={},DROITS=null,LIENS={},MYKEY
 const skey=n=>String(n||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const stok=n=>skey(n).split("-").filter(Boolean).sort().join(" ");
 const SP=id=>STRUCT.find(x=>x.id===id);
+// Une personne retirée reste comptée (unités, équipe) jusqu'au mois de son départ inclus, puis disparaît.
+const goneIn=(p,m=month)=>!!(p.supprime&&p.supprimeLe&&ym(p.supprimeLe)===m);
+let STRUCTM=null;function structFor(m){STRUCTM=m;STRUCT=STRUCTALL.filter(p=>!p.supprime||(p.supprimeLe&&m<=ym(p.supprimeLe)));deriveStruct()}
 const isMega=()=>MODE==="manager";
 const meS=()=>SP(MYKEY);
 const isSuper=()=>isMega()||meS()?.role==="superadmin";
@@ -1130,7 +1133,7 @@ const aslTeam=m=>aslBranch(MYKEY,m)-aslU(MYKEY,m);
 const hasDown=()=>!!(MYKEY&&sdown(MYKEY).length);
 // --- vue Structure ---
 function spCard(p,cls=""){const dn=sdown(p.id),u=persU(p.id),st=p.statut||"JFA1",mg=canManage(p.id);
-  return `<div class="oc ${cls}${p.binome?" bin":""}${p.bloque?" off":""}" data-s="${esc(SST.indexOf(st)>4?"FA":st)}" style="${jv(st)}" tabindex="0" data-sp="${esc(p.id)}"${dragOk(p.id)?' draggable="true"':""}>${p.verif&&mg?'<span class="tag vf">À VÉRIFIER</span>':p.binome?'<span class="tag">BINÔME</span>':""}<div class="oh"><span class="av" style="${jv(st)}">${esc(initials(p.nom))}</span><div style="min-width:0"><div class="on">${esc(p.nom)}</div><span class="os">${esc(st)}${p.uid?' · <i class="lk" title="Compte relié">●</i>':""}</span></div></div><div class="ou"><span>Unités ${esc(monthShort(month))}</span><b>${fmt(u)}</b></div>${dn.length?`<div class="ou" style="margin-top:2px"><span>Avec son équipe</span><b>${fmt(aslBranch(p.id))}</b></div>`:""}</div>`}
+  return `<div class="oc ${cls}${p.binome?" bin":""}${p.bloque?" off":""}" data-s="${esc(SST.indexOf(st)>4?"FA":st)}" style="${jv(st)}" tabindex="0" data-sp="${esc(p.id)}"${dragOk(p.id)?' draggable="true"':""}>${p.supprime?'<span class="tag gone">PARTI</span>':p.verif&&mg?'<span class="tag vf">À VÉRIFIER</span>':p.binome?'<span class="tag">BINÔME</span>':""}<div class="oh"><span class="av" style="${jv(st)}">${esc(initials(p.nom))}</span><div style="min-width:0"><div class="on">${esc(p.nom)}</div><span class="os">${esc(st)}${p.uid?' · <i class="lk" title="Compte relié">●</i>':""}</span></div></div><div class="ou"><span>Unités ${esc(monthShort(month))}</span><b>${fmt(u)}</b></div>${dn.length?`<div class="ou" style="margin-top:2px"><span>Avec son équipe</span><b>${fmt(aslBranch(p.id))}</b></div>`:""}</div>`}
 function spTree(root){const kids=[...(SKIDS[root.id]||[])].sort((a,b)=>aslBranch(b.id)-aslBranch(a.id)||String(a.nom).localeCompare(String(b.nom),"fr"));
   const flat=p=>{const o=[],w=id=>[...(SKIDS[id]||[])].sort((a,b)=>aslBranch(b.id)-aslBranch(a.id)).forEach(x=>{o.push(x);w(x.id)});w(p.id);return o};
   return `${dragOk(null)?`<p class="org-hint">Astuce : fais glisser une carte sur une autre pour la changer d'équipe.</p>`:""}<div class="org"><div class="org-in"><div class="oc me" data-s="${esc(SST.indexOf(root.statut)>4?"FA":root.statut)}" style="${jv(root.statut)}" tabindex="0" data-sp="${esc(root.id)}"><div class="oh"><span class="av" style="${jv(root.statut)}">${esc(initials(root.nom))}</span><div><div class="on">${root.id===MYKEY?"Moi · ":""}${esc(root.nom)}</div><span class="os">${esc(root.statut||"")}</span></div></div><div class="ou" style="justify-content:center;gap:8px"><span>Unités <b>${fmt(persU(root.id))}</b> · avec l'équipe <b>${fmt(aslBranch(root.id))}</b></span></div></div>
@@ -1174,9 +1177,10 @@ document.addEventListener("click",async e=>{
   if(e.target.closest("[data-spdel-ask]")){const z=$("spDelZone"),p=SP((sheetCtx?.kind==="sp"&&sheetCtx.id));if(!z||!p)return;const n=(SKIDS[p.id]||[]).length;
     z.innerHTML=`<div class="ask">Retirer ${esc(p.nom)} ?${n?` Ses ${n} recrue${n>1?"s":""} passe${n>1?"nt":""} sous ${esc(SP(p.manager)?.nom||"la tête d'équipe")}.`:""} <button class="btn danger sm" type="button" data-spdel-yes>Oui, retirer</button><button class="btn ghost sm" type="button" data-spdel-no>Non</button></div>`;return}
   if(e.target.closest("[data-spdel-no]")){const z=$("spDelZone"),p=SP((sheetCtx?.kind==="sp"&&sheetCtx.id));if(z&&p)z.innerHTML=`<button class="btn danger sm" type="button" data-spdel-ask>Retirer ${esc(p.nom)} de l'équipe</button>`;return}
+  if(e.target.closest("[data-sprest]")){const p=SP((sheetCtx?.kind==="sp"&&sheetCtx.id));if(!p)return;try{await db.doc("structure/"+p.id).update({supprime:false,supprimeLe:null});closeSheet();toast(`${p.nom} est de retour dans l'équipe`)}catch(err){showErr(msg(err))}return}
   if(e.target.closest("[data-spdel-yes]")){const p=SP((sheetCtx?.kind==="sp"&&sheetCtx.id));if(!p)return;e.target.disabled=true;
     try{for(const k of (SKIDS[p.id]||[]))await db.doc("structure/"+k.id).update({manager:p.manager||""});
-      await db.doc("structure/"+p.id).update({supprime:true,supprimeLe:today()});closeSheet();toast(`${p.nom} retiré(e) de l'équipe`)}catch(err){e.target.disabled=false;showErr(msg(err))}}
+      await db.doc("structure/"+p.id).update({supprime:true,supprimeLe:today()});closeSheet();toast(`${p.nom} retiré(e) de l'équipe : ses unités de ${monthName(ym(today()))} restent comptées`)}catch(err){e.target.disabled=false;showErr(msg(err))}}
 });
 function openSP(id){const p=id?SP(id):null,mg=id?canManage(id):isSuper();if(id&&!p)return;if(p&&ctOk(p.id)&&isSuper())watchOne(p.id);const a=p?aslP(p.id):null,dn=p?sdown(p.id):[];
   const pool=visS().filter(x=>!p||(x.id!==p.id&&!dn.some(d=>d.id===x.id))).sort((x,y)=>String(x.nom).localeCompare(String(y.nom),"fr"));
@@ -1199,7 +1203,7 @@ function openSP(id){const p=id?SP(id):null,mg=id?canManage(id):isSuper();if(id&&
       <div class="spmods" ${cust?"":"hidden"}>${MODS.map(([k,l])=>`<label class="check"><input type="checkbox" data-mod="${k}" ${(p?.mods||(DROITS||DROITS0)[p?.statut||"JFA1"]||[]).includes(k)?"checked":""}> ${l}</label>`).join("")}</div></div>
     <div class="two"><label class="check"><input type="checkbox" id="spBin" ${p?.binome?"checked":""}> Binôme</label><label class="check"><input type="checkbox" id="spVf" ${p?.verif?"checked":""}> À vérifier</label></div>
     ${p&&p.id!==MYKEY?`<label class="check"><input type="checkbox" id="spBlk" ${p?.bloque?"checked":""}> Accès suspendu</label>`:""}
-    <p class="err" id="sErr"></p>${p&&p.id!==MYKEY&&canWrite?`<div class="sec-t">Actions</div><div id="spDelZone"><button class="btn danger sm" type="button" data-spdel-ask>Retirer ${esc(p.nom)} de l'équipe</button></div>`:""}`:`<div class="two"><div class="field"><span class="lab">Statut</span><span class="badge" style="${jv(p.statut)};align-self:flex-start">${esc(p.statut)}</span></div><div class="field"><span class="lab">Manager</span><span>${esc(SP(p.manager)?.nom||"—")}</span></div></div>`;
+    <p class="err" id="sErr"></p>${p&&p.id!==MYKEY&&canWrite?`<div class="sec-t">Actions</div><div id="spDelZone">${p.supprime?`<p class="note" style="margin:0 0 8px">Retiré(e) de l'équipe le ${dmy(p.supprimeLe)}. Ses unités restent comptées jusqu'à ${esc(monthName(ym(p.supprimeLe)))}, puis la fiche disparaît.</p><button class="btn ghost sm" type="button" data-sprest>Remettre ${esc(p.nom)} dans l'équipe</button>`:`<button class="btn danger sm" type="button" data-spdel-ask>Retirer ${esc(p.nom)} de l'équipe</button>`}</div>`:""}`:`<div class="two"><div class="field"><span class="lab">Statut</span><span class="badge" style="${jv(p.statut)};align-self:flex-start">${esc(p.statut)}</span></div><div class="field"><span class="lab">Manager</span><span>${esc(SP(p.manager)?.nom||"—")}</span></div></div>`;
   openSheet(p?p.nom:"Ajouter une personne",view+edit,mg?`<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="submit">Enregistrer</button>`:`<button class="btn" type="button" data-close>Fermer</button>`,{kind:"sp",id:p?.id||null,path:p?"structure/"+p.id:null,row:p})}
 $("sheet").addEventListener("click",e=>{const b=e.target.closest("[data-spm]");if(!b)return;$("sheet").querySelectorAll("[data-spm]").forEach(x=>x.setAttribute("aria-pressed",x===b));$("sheet").querySelector(".spmods").hidden=b.dataset.spm!=="cus"});
 async function saveSP(c){const nom=$("spNom").value.trim();if(!nom){showErr("Indique un nom.");return}
@@ -1453,7 +1457,7 @@ function watchASLC(){if(!window.WEB||!db||!MYKEY||ASLCK===MYKEY)return;ASLCK=MYK
 const ETAT={v:["Validé","ok"],a:["En attente sur Lya","wait"],c:["À corriger","ko"],r:["Refusé","ko"]};
 const aslcList=()=>Object.entries(ASLC).flatMap(([m,d])=>(d.contrats||[]).map((c,i)=>({...c,ym:m,i}))).sort((a,b)=>b.ym.localeCompare(a.ym)||String(a.c).localeCompare(String(b.c),"fr"));
 const etatChip=e=>{const k=etatK(e),[l,c]=ETAT[k]||ETAT.a;return `<span class="echip ${c}">${l}</span>`};
-function render(){paintFoot();watchASLC();watchASLX();if(sheetCtx?.kind==="sp"&&$("spCtL"))$("spCtL").innerHTML=ctList(sheetCtx.id);
+function render(){if(STRUCTALL.length&&STRUCTM!==month)structFor(month);paintFoot();watchASLC();watchASLX();if(sheetCtx?.kind==="sp"&&$("spCtL"))$("spCtL").innerHTML=ctList(sheetCtx.id);
   {const cur=ym(today()),b=$("pastBan");if(b){b.hidden=month===cur;if(month!==cur)b.innerHTML=`<span>Tu regardes <b>${esc(monthName(month))}</b>${month>cur?" (mois à venir)":""}</span><button class="btn sm" type="button" data-backnow>Revenir à ${esc(monthName(cur))}</button>`}}
   $("mLabel").textContent=monthName(month);
   const due=dueRelances().length;document.querySelectorAll("[data-cnt]").forEach(c=>{c.hidden=!due;c.textContent=due});
@@ -2414,7 +2418,7 @@ setView(view);
   }
   window.claude.use("downloads").then(d=>{dl=d;if(view==="obj")render()}).catch(()=>{});
   if(MODE==="manager")window.claude.use("assets").then(a=>{ASSETS=a}).catch(()=>{});
-  db.collection("structure").onSnapshot(s=>{STRUCTALL=s.docs.map(clean);STRUCT=STRUCTALL.filter(p=>!p.supprime);deriveStruct();
+  db.collection("structure").onSnapshot(s=>{STRUCTALL=s.docs.map(clean);structFor(month);
     if(MODE==="manager"&&SELF){const dp=SP("damien-paulot");if(dp&&!dp.uid&&!STRUCT.some(x=>x.uid===SELF)){const {id:_i,...rest}=dp;db.doc("structure/damien-paulot").set({...rest,uid:SELF}).catch(()=>{})}}
     if(MODE==="member"&&UID){if(meS()?.bloque||ACC[UID]?.bloque)showPortal("blocked");else if(PORTAL==="blocked")hidePortal()}
     refreshNav();paintPortal();render()},()=>{});
